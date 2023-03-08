@@ -26,6 +26,7 @@ configurations.all {
 ```
 
 ## 3. Use
+`application.properties`
 
 ```
 # const
