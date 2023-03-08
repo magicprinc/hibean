@@ -1,0 +1,27 @@
+ebean:
+  dumpMetricsOnShutdown: true
+  dumpMetricsOptions: loc,sql,hash #hash,sql,loc
+  test:
+#    useDocker: false
+#    shutdown: stop # stop | remove
+    platform: h2 # h2, postgres, mysql, oracle, sqlserver, sqlite
+    ddlMode: dropCreate # none | dropCreate | create | migration | createOnly | migrationDropCreate
+    dbName: my_app
+
+  db:
+    databasePlatformName: h2
+
+  migration:
+    run: true
+
+datasource:
+  db:
+    copyFrom: extra
+
+extra:
+  idle-timeout: 61_000
+  max-connections: 31
+
+
+external:
+  confFile: /nativeHikari.conf

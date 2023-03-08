@@ -1,0 +1,112 @@
+plugins {
+  id("java")
+  id("idea")
+  id 'maven-publish'
+
+  id("io.ebean") version "latest.release"
+
+  id("name.remal.sonarlint") version "latest.release" // https://github.com/remal-gradle-plugins/sonarlint + https://lift.sonatype.com/
+  id("net.ltgt.errorprone")  version "latest.release" // https://errorprone.info/
+}
+
+repositories {
+  mavenLocal()
+  mavenCentral()
+}
+
+idea {
+  module {
+    downloadJavadoc = true
+    downloadSources = true
+  }
+}
+
+sourceCompatibility = 8
+
+tasks.withType(JavaCompile).configureEach {
+  options.encoding = 'UTF-8'
+  options.compilerArgs.addAll(['-Xlint:all', '-parameters', '-g', '-Xmaxwarns', '999'])
+  options.release.set(11) // javac --release 7..19+
+  options.deprecation = true
+
+  options.errorprone {
+    enabled = true  // <<<!!! You can disable Error-Prone here!
+    disableWarningsInGeneratedCode = true
+    excludedPaths = ".*/build/gen.*/.*"
+    disable("ParameterName")
+    disable("UnusedVariable")
+    disable("MissingSummary")
+    errorproneArgs = ["-XepExcludedPaths:.*/test/.*"]
+  }
+}
+
+dependencies {
+  errorprone("com.google.errorprone:error_prone_core:latest.release")
+  annotationProcessor("io.ebean:querybean-generator:latest.release")
+
+  implementation("io.ebean:ebean:latest.release")
+  implementation('com.zaxxer:HikariCP:latest.release')
+
+  compileOnly('io.micrometer:micrometer-core:latest.release')
+
+  //*** TEST TEST TEST
+
+  testImplementation(platform('org.junit:junit-bom:latest.release'))
+  testImplementation('org.junit.jupiter:junit-jupiter')
+  testImplementation('org.junit.vintage:junit-vintage-engine')
+  testImplementation('org.mockito:mockito-inline:latest.release')
+
+  testImplementation("com.h2database:h2:2.1.214")
+  testImplementation("io.ebean:ebean-querybean:latest.release")
+
+  testImplementation("io.ebean:ebean-test:latest.release")
+
+  testImplementation("org.slf4j:slf4j-api:1.7.+", "org.slf4j:jcl-over-slf4j:1.7.+", "org.slf4j:log4j-over-slf4j:1.7.+", "org.slf4j:jul-to-slf4j:1.7.+")
+  testImplementation("ch.qos.logback:logback-classic:1.2.+")
+}
+// https://tomgregory.com/how-to-exclude-gradle-dependencies/
+configurations.all { // .implementation ?
+  exclude group: 'io.ebean', module: 'ebean-datasource'
+}
+
+ebean {
+  debugLevel = 9 //0 - 9
+}
+
+test {
+  useJUnitPlatform()
+  testLogging {
+    events "passed", "skipped", "failed"
+  }
+  maxHeapSize = "500m"
+  enableAssertions = true
+
+  testLogging.showStandardStreams = true // show standard out & err of the test JVM on the console
+  testLogging.exceptionFormat = 'full'
+
+  System.setProperty("slf4j.detectLoggerNameMismatch", "true")
+  System.setProperty("file.encoding", "UTF-8")
+
+  System.setProperty("user.language", "en")
+}
+sonarLint {
+  isGeneratedCodeIgnored = true
+  ignoreFailures = true
+}
+// https://docs.gradle.org/current/userguide/publishing_maven.html
+publishing {
+  publications {
+    maven(MavenPublication) {
+      //groupId in gradle.properties;  artifactId == folder name
+      from components.java
+    }
+  }
+}
+java {
+  withSourcesJar()
+  // withJavadocJar()
+}
+javadoc {
+  options.encoding = 'UTF-8'
+  options.addBooleanOption('html5', true)
+}
