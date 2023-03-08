@@ -3,6 +3,8 @@
 
 Seamless drop-in replacement of Ebean's default connection pool.
 
+[![Java CI with Gradle](https://github.com/magicprinc/hibean/actions/workflows/gradle.yml/badge.svg)](https://github.com/magicprinc/hibean/actions/workflows/gradle.yml)
+
 ## 1. Install
 ```
 $ gradle clean build publishToMavenLocal
