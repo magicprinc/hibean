@@ -15,7 +15,7 @@ $ gradle clean build publishToMavenLocal
 `build.gradle`
 
 ```
-runtimeOnly("com.github.magicprinc:hibean:1.0")
+runtimeOnly("com.github.magicprinc:hibean:latest.release")
 
 ...
 
@@ -50,3 +50,10 @@ or
 ```
 my_external_conf_db.confFile = /nativeHikari.conf
 ```
+
+Use can replace configuration with configuration of another db (useful in tests, where you have mix of main and test settings)
+
+`db.copyFrom = test_db`
+
+You can merge (reuse) several db configs
+`datasource.db.appendFrom = template1, extra`
