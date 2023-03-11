@@ -14,18 +14,23 @@ import io.ebean.datasource.DataSourceConfig;
 import io.ebean.datasource.DataSourcePool;
 import io.ebean.datasource.PoolStatus;
 import io.micrometer.core.instrument.Metrics;
+import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.text.Normalizer;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.function.Consumer;
@@ -73,6 +78,14 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
       filter(aliasMap, configProperties,  dst, copyFromDb);
       filter(aliasMap, sysProp, dst, copyFromDb);
     }
+    String[] appendFrom = trim(dst.getProperty("appendFrom")).split("[;,]");
+    for (String db : appendFrom){// add settings from another db
+      db = trim(db);
+      if (!db.isEmpty()){
+        filter(aliasMap, configProperties,  dst, db);
+        filter(aliasMap, sysProp, dst, db);
+      }
+    }
 
     String confFile = trim(dst.getProperty("confFile"));
     if (!confFile.isEmpty()){// load from another ^ <hikari>.properties file:  full delegation!
@@ -80,39 +93,104 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
       return;
     }
 
-    // hikari-ebean, ebean-hikari (default), hikari, ebean
+    HikariConfig hc = new HikariConfig();
     String propertyNames = normValue(trim(dst.getProperty("propertyNames")))
         .replace("-","").replace("then","").replace("only","").replace("than","");
+    // hikari-ebean, ebean-hikari (default), hikari, ebean
     if ("hikari".equalsIgnoreCase(propertyNames)){
-      ds = createDataSource(new HikariConfig(dst), poolName);// only hikari property names are used
+      setTargetFromProperties(hc, dst);
+      ds = createDataSource(hc, poolName);// only hikari property names are used
 
     } else if ("hikariebean".equalsIgnoreCase(propertyNames)){
-      HikariConfig hc = new HikariConfig(dst);
-      mergeFromDataSourceConfig(hc, config);
+      setTargetFromProperties(hc, dst);//1. hikari
+      mergeFromDataSourceConfig(hc, config);//2. ebean (overrides)
       ds = createDataSource(hc, poolName);
 
     } else if ("ebean".equalsIgnoreCase(propertyNames)){
-      HikariConfig hc = new HikariConfig();
       mergeFromDataSourceConfig(hc, config);
       ds = createDataSource(hc, poolName);
 
     } else {// everything else: ebean-hikari
-      HikariConfig hc = new HikariConfig();
       mergeFromDataSourceConfig(hc, config);//1.ebean
-      PropertyElf.setTargetFromProperties(hc, dst);//2.hikari
+      setTargetFromProperties(hc, dst);//2.hikari (overrides)
       ds = createDataSource(hc, poolName);
     }
   }//new
 
   protected HikariDataSource createDataSource (HikariConfig hc, String poolName){
-    try {// setupMonitoring(hc)
+    try {// setupMonitoring
       hc.setMetricRegistry(Metrics.globalRegistry);
     } catch (Throwable ignore){
       // no Micrometer in classPath; see also hikariConfig.setRegisterMbeans(true)
     }
-
     hc.setPoolName(poolName.isEmpty() ? "ebean" : "ebean."+ poolName);
     return new HikariDataSource(hc);
+  }
+
+  /** @see PropertyElf#setTargetFromProperties*/
+  static void setTargetFromProperties (HikariConfig hc, Properties p){
+    p.remove("appendFrom");  p.remove("copyFrom");  p.remove("confFile");
+    List<Method> methods = Arrays.asList(hc.getClass().getMethods());
+    p.forEach((keyObj, value) -> {
+      String key = trim(keyObj);
+      String k = key.toLowerCase(Locale.ENGLISH);
+      if (k.startsWith("datasource.")){
+        hc.addDataSourceProperty(key.substring("datasource.".length()), value);
+      } else if (k.startsWith("driver.")){
+        hc.addDataSourceProperty(key.substring("driver.".length()), value);
+      } else {
+        setProperty(hc, key, value, methods);
+      }
+    });
+  }
+  /** TO DO keep in sync with {@link PropertyElf#setProperty} */
+  static void setProperty(final Object target, final String propName, final Object propValue, final List<Method> methods) {
+    final var logger = LoggerFactory.getLogger("com.zaxxer.hikari.util.PropertyElf.HikariEbeanDataSourcePool");
+
+    // use the english locale to avoid the infamous turkish locale bug
+    var methodName = "set" + propName.substring(0, 1).toUpperCase(Locale.ENGLISH) + propName.substring(1);
+    var writeMethod = methods.stream().filter(m -> m.getName().equals(methodName) && m.getParameterCount() == 1).findFirst().orElse(null);
+
+    if (writeMethod == null) {
+      var methodName2 = "set" + propName.toUpperCase(Locale.ENGLISH);
+      writeMethod = methods.stream().filter(m -> m.getName().equals(methodName2) && m.getParameterCount() == 1).findFirst().orElse(null);
+    }
+
+    if (writeMethod == null) {
+      logger.warn("Property {} does not exist on target {}", propName, target.getClass());// ~ ebean property
+      return;
+    }
+
+    try {
+      var paramClass = writeMethod.getParameterTypes()[0];
+      if (paramClass == int.class) {
+        writeMethod.invoke(target, Integer.parseInt(propValue.toString()));
+      }
+      else if (paramClass == long.class) {
+        writeMethod.invoke(target, Long.parseLong(propValue.toString()));
+      }
+      else if (paramClass == short.class) {
+        writeMethod.invoke(target, Short.parseShort(propValue.toString()));
+      }
+      else if (paramClass == boolean.class || paramClass == Boolean.class) {
+        writeMethod.invoke(target, Boolean.parseBoolean(propValue.toString()));
+      }
+      else if (paramClass == String.class) {
+        writeMethod.invoke(target, propValue.toString());
+      }
+      else {
+        try {
+          logger.debug("Try to create a new instance of \"{}\"", propValue);
+          writeMethod.invoke(target, Class.forName(propValue.toString()).getDeclaredConstructor().newInstance());
+        }
+        catch (InstantiationException | ClassNotFoundException e) {
+          logger.debug("Class \"{}\" not found or could not instantiate it (Default constructor)", propValue);
+          writeMethod.invoke(target, propValue);
+        }
+      }
+    } catch (Throwable e){
+      logger.error("Failed to set property {} on target {}", propName, target.getClass(), e);
+    }
   }
 
   protected void mergeFromDataSourceConfig (HikariConfig hc, DataSourceConfig dsc) {
@@ -164,7 +242,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
         p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
         HashMap<String,String> m = new HashMap<>(p.size()+31);
         p.forEach((keyObj,valueObj)->{
-          String key = trim(keyObj).toLowerCase().replace("-", "").replace("_", "");
+          String key = trim(keyObj).toLowerCase(Locale.ENGLISH).replace("-", "").replace("_", "");
           m.put(key, trim(valueObj));
         });
         return m;
@@ -241,7 +319,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
 
     src.forEach((keyObj,value)->{
       String fullKey = trim(keyObj);
-      String k = fullKey.toLowerCase().replace("-","").replace("_","");
+      String k = fullKey.toLowerCase(Locale.ENGLISH);
 
       String propertyName;
       if (k.startsWith(p1)){
@@ -255,12 +333,16 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
         return;// == continue
       }
 
+      k = k.replace("-","").replace("_","");
       String alias = trim(aliasMap.get(k));
       if (!alias.isEmpty()){
         propertyName = alias; // e.g. url (ebean name) → jdbcUrl (hikari name)
       }
 
-      propertyName = toCamelFromUnderscore(propertyName.replace('-', '_'));// spring.boot-key_fmt
+      boolean isVendorDriver = k.startsWith("datasource.") || k.startsWith("driver.");
+      if (!isVendorDriver){
+        propertyName = toCamelFromUnderscore(propertyName.replace('-', '_'));// spring.boot-key_fmt
+      }
       dst.put(propertyName, normValue(value));
     });
   }

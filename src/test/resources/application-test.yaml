@@ -18,6 +18,19 @@ datasource:
   db:
     copyFrom: extra
 
+  mix:
+    appendFrom: db, extra
+    url: jdbc:h2:mem:testMix
+    failOnStart: false
+    drivEr:
+      NETWORK_TIMEOUT: 51_000
+    DataSourcE:
+      NO_UPGRADE: true
+    customProperties: RECOVER_TEST=true
+    minConnections: 7
+    initSql: select 1; select 2
+
+
 extra:
   idle-timeout: 61_000
   max-connections: 31

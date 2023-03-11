@@ -12,9 +12,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Comparator;
+import java.util.Properties;
 
 import static com.github.magicprinc.hibean.HikariEbeanDataSourcePool.isNumeric;
 import static com.github.magicprinc.hibean.HikariEbeanDataSourcePool.normValue;
+import static java.util.stream.Collectors.joining;
 import static org.junit.jupiter.api.Assertions.*;
 
 class HikariEbeanDataSourcePoolTest {
@@ -49,7 +52,7 @@ class HikariEbeanDataSourcePoolTest {
     con.close();
   }
 
-  @Test void testProgrammicNoConfigFile () {
+  @Test void testNoConfigFile () {
     DataSourceConfig config = new DataSourceConfig()
         .setUrl("jdbc:h2:mem:tests7")
         .setUsername("foo")
@@ -71,5 +74,21 @@ class HikariEbeanDataSourcePoolTest {
     assertEquals(51, p.ds.getMaximumPoolSize());
     assertEquals(19, p.ds.getMinimumIdle());
     assertEquals(7*60*1000, p.ds.getMaxLifetime());
+    p.shutdown();
+  }
+
+  @Test void testMixProp () throws SQLException {
+    Database db = DB.byName("mix");
+    HikariEbeanDataSourcePool ds = (HikariEbeanDataSourcePool) db.dataSource();
+    HikariDataSource hds = ds.unwrap(null);
+    assertEquals(-1, hds.getInitializationFailTimeout());
+    assertEquals("jdbc:h2:mem:testMix", hds.getJdbcUrl());
+    assertEquals(61000, hds.getIdleTimeout());
+    assertEquals(31, hds.getMaximumPoolSize());
+    assertEquals(7, hds.getMinimumIdle());
+    Properties p = hds.getDataSourceProperties();
+    String s = p.entrySet().stream().sorted(Comparator.comparing(c->c.getKey().toString())).map(Object::toString).collect(joining("|"));
+    assertEquals("NETWORK_TIMEOUT=51000|NO_UPGRADE=true|RECOVER_TEST=true", s);
+    assertEquals("select 1;\r\nselect 2", hds.getConnectionInitSql());
   }
 }
