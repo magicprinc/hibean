@@ -5,6 +5,9 @@ import com.zaxxer.hikari.HikariConfigMXBean;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariPoolMXBean;
 import com.zaxxer.hikari.metrics.micrometer.MicrometerMetricsTracker;
+import com.zaxxer.hikari.pool.HikariPool;
+import com.zaxxer.hikari.util.IsolationLevel;
+import com.zaxxer.hikari.util.PropertyElf;
 import io.avaje.config.Config;
 import io.ebean.config.DatabaseConfig;
 import io.ebean.datasource.DataSourceConfig;
@@ -12,6 +15,7 @@ import io.ebean.datasource.DataSourcePool;
 import io.ebean.datasource.PoolStatus;
 import io.micrometer.core.instrument.Metrics;
 
+import javax.sql.DataSource;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -25,7 +29,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.IntConsumer;
+import java.util.function.LongConsumer;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -56,43 +61,95 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     Map<String,String> aliasMap = alias();
 
     Properties configProperties = Config.asProperties();
+    Properties sysProp = System.getProperties();
     Properties dst = new Properties(configProperties.size() + 31);
+
     filter(aliasMap, configProperties,  dst, poolName);
-    filter(aliasMap, System.getProperties(), dst, poolName);
+    filter(aliasMap, sysProp, dst, poolName);
 
-    String name = poolName.isEmpty() ? "ebean" : "ebean."+ poolName;
-    dst.setProperty("poolName", name);
-
-    String copyFromDb = trim(dst.getProperty("copyFrom"));// useful in tests: workaround for main/test settings collisions
-    if (!copyFromDb.isEmpty()){
+    String copyFromDb = trim(dst.getProperty("copyFrom"));
+    if (!copyFromDb.isEmpty()){// useful in tests: ^ workaround for main/test settings collisions
       dst.clear();// mix of main and test configs
       filter(aliasMap, configProperties,  dst, copyFromDb);
-      filter(aliasMap, System.getProperties(), dst, copyFromDb);
+      filter(aliasMap, sysProp, dst, copyFromDb);
     }
 
-    HikariConfig hc;
-    String confFile = trim(dst.getProperty("confFile"));// load from another .properties file
-    if (confFile.isEmpty()){
-      hc = new HikariConfig(dst);
+    String confFile = trim(dst.getProperty("confFile"));
+    if (!confFile.isEmpty()){// load from another ^ <hikari>.properties file:  full delegation!
+      ds = createDataSource(new HikariConfig(confFile), poolName);
+      return;
+    }
+
+    // hikari-ebean, ebean-hikari (default), hikari, ebean
+    String propertyNames = normValue(trim(dst.getProperty("propertyNames")))
+        .replace("-","").replace("then","").replace("only","").replace("than","");
+    if ("hikari".equalsIgnoreCase(propertyNames)){
+      ds = createDataSource(new HikariConfig(dst), poolName);// only hikari property names are used
+
+    } else if ("hikariebean".equalsIgnoreCase(propertyNames)){
+      HikariConfig hc = new HikariConfig(dst);
       mergeFromDataSourceConfig(hc, config);
-    } else {
-      hc = new HikariConfig(confFile);// full delegation
-    }
+      ds = createDataSource(hc, poolName);
 
-    setupMonitoring(hc);
-    hc.setPoolName(name);// to be sure
-    ds = new HikariDataSource(hc);
+    } else if ("ebean".equalsIgnoreCase(propertyNames)){
+      HikariConfig hc = new HikariConfig();
+      mergeFromDataSourceConfig(hc, config);
+      ds = createDataSource(hc, poolName);
+
+    } else {// everything else: ebean-hikari
+      HikariConfig hc = new HikariConfig();
+      mergeFromDataSourceConfig(hc, config);//1.ebean
+      PropertyElf.setTargetFromProperties(hc, dst);//2.hikari
+      ds = createDataSource(hc, poolName);
+    }
   }//new
 
-  protected void mergeFromDataSourceConfig (HikariConfig hc, DataSourceConfig config){
-    hc.setReadOnly(config.isReadOnly());
-    copyIf(hc::getJdbcUrl, config::getUrl, hc::setJdbcUrl);
-    copyIf(hc::getDriverClassName, config::getDriver, hc::setDriverClassName);
-    copyIf(hc::getUsername, config::getUsername, hc::setUsername);
-    copyIf(hc::getUsername, config::getOwnerUsername, hc::setUsername);
-    copyIf(hc::getPassword, config::getPassword, hc::setUsername);
-    copyIf(hc::getPassword, config::getOwnerPassword, hc::setPassword);
-    copyIf(hc::getSchema, config::getSchema, hc::setSchema);
+  protected HikariDataSource createDataSource (HikariConfig hc, String poolName){
+    try {// setupMonitoring(hc)
+      hc.setMetricRegistry(Metrics.globalRegistry);
+    } catch (Throwable ignore){
+      // no Micrometer in classPath; see also hikariConfig.setRegisterMbeans(true)
+    }
+
+    hc.setPoolName(poolName.isEmpty() ? "ebean" : "ebean."+ poolName);
+    return new HikariDataSource(hc);
+  }
+
+  protected void mergeFromDataSourceConfig (HikariConfig hc, DataSourceConfig dsc) {
+    hc.setReadOnly(dsc.isReadOnly());//!
+    sets(dsc.getUrl(), hc::setJdbcUrl);
+    sets(dsc.getDriver(), hc::setDriverClassName);
+    sets(dsc.getUsername(), hc::setUsername);
+    sets(dsc.getOwnerUsername(), hc::setUsername);
+    sets(dsc.getPassword(), hc::setPassword);
+    sets(dsc.getOwnerPassword(), hc::setPassword);
+    sets(dsc.getSchema(), hc::setSchema);
+
+    hc.setTransactionIsolation(IsolationLevel.values()[dsc.getIsolationLevel()].toString());
+    hc.setAutoCommit(dsc.isAutoCommit());
+    seti(dsc.getMinConnections(), hc::setMinimumIdle);
+    seti(dsc.getMaxConnections(), hc::setMaximumPoolSize);
+
+    sets(dsc.getHeartbeatSql(), hc::setConnectionTestQuery);
+    setl(dsc.getHeartbeatFreqSecs(), s->hc.setKeepaliveTime(s * 1000L));
+    setl(dsc.getHeartbeatTimeoutSeconds(), s->hc.setValidationTimeout(s * 1000L));
+
+    setl(dsc.getLeakTimeMinutes(), m->hc.setLeakDetectionThreshold(m * 60 * 1000L));
+    setl(dsc.getWaitTimeoutMillis(), hc::setConnectionTimeout);
+    setl(dsc.getMaxInactiveTimeSecs(), s->hc.setIdleTimeout(s * 1000L));
+    setl(dsc.getMaxAgeMinutes(), m->hc.setMaxLifetime(m * 60 * 1000L));
+    if (!dsc.isFailOnStart()){
+      hc.setInitializationFailTimeout(-1);// or 0 is better?
+    }
+    Map<String,String> cp = dsc.getCustomProperties();
+    if (cp != null && !cp.isEmpty()){
+      Properties p = new Properties(cp.size() * 13 / 10);
+      p.putAll(cp);
+      hc.setDataSourceProperties(p);
+    }
+    if (dsc.getInitSql() != null && !dsc.getInitSql().isEmpty()){
+      sets(String.join(";\r\n", dsc.getInitSql()), hc::setConnectionInitSql);
+    }
   }
 
   /** Property name aliases: ebean property name → hikari property name. E.g. url → jdbcUrl*/
@@ -117,20 +174,20 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     }
   }
 
-  protected void setupMonitoring (HikariConfig hikariConfig){
-    try {
-      hikariConfig.setMetricRegistry(Metrics.globalRegistry);
-    } catch (Throwable ignore){
-      // no Micrometer in classPath; see also hikariConfig.setRegisterMbeans(true)
+  void sets (String dataSourceConfig, Consumer<String> setter){
+    String s = trim(dataSourceConfig);
+    if ( !s.isEmpty() ){// e.g. driver can't be ""
+      setter.accept(s);
     }
   }
-
-  void copyIf (Supplier<String> getterHkCfg, Supplier<String> config, Consumer<String> setter){
-    if ( trim(getterHkCfg.get()).isEmpty() ){// absent property
-      String s = trim(config.get());
-      if ( !s.isEmpty() ){
-        setter.accept(s);
-      }
+  void seti (int dataSourceConfig, IntConsumer setter){
+    if ( dataSourceConfig > 0 ){
+      setter.accept(dataSourceConfig);
+    }
+  }
+  void setl (long dataSourceConfig, LongConsumer setter){
+    if ( dataSourceConfig > 0 ){
+      setter.accept(dataSourceConfig);
     }
   }
 
@@ -166,7 +223,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     return s;
   }
 
-  private static final Pattern SPACE_AND_UNDERSCORE = Pattern.compile("[\\s_]");
+  private static final Pattern SPACE_AND_UNDERSCORE = Pattern.compile("[\\s_]", Pattern.CASE_INSENSITIVE|Pattern.UNICODE_CHARACTER_CLASS);
 
   /**
    * Filter very wide application.properties using the prefix and db name (if supplied) to search for the hikari properties.
@@ -325,7 +382,15 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
 
   @SuppressWarnings("unchecked") @Override
   public <T> T unwrap (Class<T> iface) throws SQLException {
-    if (iface == null){ return (T) ds; }
+    if (iface == null || iface == HikariDataSource.class || iface == HikariConfig.class){
+      return (T) ds;
+    }
+
+    if (DataSource.class.equals(iface)){
+      HikariPool p = (HikariPool) ds.getHikariPoolMXBean();// hack!
+      return (T) p.getUnwrappedDataSource();
+    }
+
     return ds.unwrap(iface);
   }
 
