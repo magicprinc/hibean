@@ -53,7 +53,11 @@ my_external_conf_db.confFile = /nativeHikari.conf
 
 Use can replace configuration with configuration of another db (useful in tests, where you have mix of main and test settings)
 
-`db.copyFrom = test_db`
+```
+db.copyFrom = test_db
+```
 
 You can merge (reuse) several db configs
-`datasource.db.appendFrom = template1, extra`
+```
+datasource.db.appendFrom = template1, extra
+```
