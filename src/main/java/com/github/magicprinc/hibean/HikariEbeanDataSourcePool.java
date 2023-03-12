@@ -127,24 +127,31 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     return new HikariDataSource(hc);
   }
 
+  private static final List<String> VENDOR_SETTINGS_PREFIX = Arrays.asList("datasource.", "driver.");
+
   /** @see PropertyElf#setTargetFromProperties*/
   static void setTargetFromProperties (HikariConfig hc, Properties p){
     p.remove("appendFrom");  p.remove("copyFrom");  p.remove("confFile");
+
     List<Method> methods = Arrays.asList(hc.getClass().getMethods());
     p.forEach((keyObj, value) -> {
       String key = trim(keyObj);
       String k = key.toLowerCase(Locale.ENGLISH);
-      if (k.startsWith("datasource.")){
-        hc.addDataSourceProperty(key.substring("datasource.".length()), value);
-      } else if (k.startsWith("driver.")){
-        hc.addDataSourceProperty(key.substring("driver.".length()), value);
-      } else {
+
+      for (String prefix : VENDOR_SETTINGS_PREFIX){
+        if (k.startsWith(prefix)){
+          hc.addDataSourceProperty(key.substring(prefix.length()), value);
+          return;// ~ continue
+        }
+      }//else: HikariConfig.setter
+      String javaPropertyName = toCamelFromUnderscore(key.replace('-', '_'));// spring.boot-key_fmt
+      boolean success = setProperty(hc, javaPropertyName, value, methods);
+      if (!success && !javaPropertyName.equals(key))// fallback to property_name as is
         setProperty(hc, key, value, methods);
-      }
     });
   }
   /** TO DO keep in sync with {@link PropertyElf#setProperty} */
-  static void setProperty(final Object target, final String propName, final Object propValue, final List<Method> methods) {
+  static boolean setProperty(final Object target, final String propName, final Object propValue, final List<Method> methods) {
     final var logger = LoggerFactory.getLogger("com.zaxxer.hikari.util.PropertyElf.HikariEbeanDataSourcePool");
 
     // use the english locale to avoid the infamous turkish locale bug
@@ -158,7 +165,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
 
     if (writeMethod == null) {
       logger.warn("Property {} does not exist on target {}", propName, target.getClass());// ~ ebean property
-      return;
+      return false;
     }
 
     try {
@@ -188,8 +195,10 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
           writeMethod.invoke(target, propValue);
         }
       }
+      return true;// success
     } catch (Throwable e){
       logger.error("Failed to set property {} on target {}", propName, target.getClass(), e);
+      return false;
     }
   }
 
@@ -273,7 +282,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     return s == null ? "" : s.toString().trim().strip();
   }
 
-  /** Is "+1,000_000.17" numeric? */
+  /** Is "+1,000_000.17" numeric? 0x is not supported by ConfigPropertiesHelper.getInt */
   static boolean isNumeric (CharSequence s){
     int digits = 0;
     for (int i = 0, len = s.length(); i < len; i++){
@@ -339,14 +348,9 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
         propertyName = alias; // e.g. url (ebean name) → jdbcUrl (hikari name)
       }
 
-      boolean isVendorDriver = k.startsWith("datasource.") || k.startsWith("driver.");
-      if (!isVendorDriver){
-        propertyName = toCamelFromUnderscore(propertyName.replace('-', '_'));// spring.boot-key_fmt
-      }
       dst.put(propertyName, normValue(value));
     });
   }
-
 
   @Override public String name () {
     return ds.getPoolName();
