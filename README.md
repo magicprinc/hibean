@@ -51,7 +51,7 @@ or
 my_external_conf_db.confFile = /nativeHikari.conf
 ```
 
-Use can replace configuration with configuration of another db (useful in tests, where you have mix of main and test settings)
+You can replace configuration with configuration of another db (useful in tests, where you have mix of main and test settings)
 
 ```
 db.copyFrom = test_db
