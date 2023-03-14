@@ -98,11 +98,13 @@ class HikariEbeanDataSourcePoolTest {
     try {
       HikariEbeanDataSourcePool.SETTINGS_PREFIX[1] = "spring.datasource.";
 
-      var db = DB.byName("name_is_not_used_in_prefix_above");
+      var db = DB.byName("test_spring");
       var pool = (HikariEbeanDataSourcePool) db.dataSource();
       assertEquals("jdbc:h2:mem:fromSprng", pool.ds.getJdbcUrl());
       assertEquals("ufoo", pool.ds.getUsername());
       assertEquals("pbar", pool.ds.getPassword());
+      assertTrue(pool.ds.isReadOnly());
+      assertEquals(54321, pool.ds.getMaxLifetime());
 
     } finally {
       System.arraycopy(save, 0, HikariEbeanDataSourcePool.SETTINGS_PREFIX, 0, save.length);

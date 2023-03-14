@@ -28,6 +28,7 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -94,6 +95,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     }
 
     HikariConfig hc = new HikariConfig();
+    hc.setPoolName(poolName.isEmpty() ? "ebean" : "ebean."+ poolName);// helps to know poolName during init phase
     String propertyNames = normValue(trim(dst.getProperty("propertyNames")))
         .replace("-","").replace("then","").replace("only","").replace("than","");
     // hikari-ebean, ebean-hikari (default), hikari, ebean
@@ -311,7 +313,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
   }
 
   private static final Pattern SPACE_AND_UNDERSCORE = Pattern.compile("[\\s_]", Pattern.CASE_INSENSITIVE|Pattern.UNICODE_CHARACTER_CLASS);
-  static final String[] SETTINGS_PREFIX = { "%db%", System.getProperty("hibean.prefix", "datasource.%db%") };
+  static final String[] SETTINGS_PREFIX = { "%db%", System.getProperty("hibean.prefix", "datasource.%db%"), "spring.datasource.%db%hikari." };
 
   /**
    * Filter very wide application.properties using the prefix and db name (if supplied) to search for the hikari properties.
@@ -325,18 +327,20 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
    */
   void filter (Map<String,String> aliasMap, Properties src, Properties dst, String dbName) {
     String db =  dbName.isEmpty() ? "db." : dbName.toLowerCase()+'.'; // db. or mydb.
+    var prefixes = Arrays.stream(SETTINGS_PREFIX)
+        .map(pre->trim(pre).toLowerCase(Locale.ENGLISH).replace("%db%", db))
+        .sorted(Comparator.comparing(String::length).reversed()).toArray(String[]::new);
 
     src.forEach((keyObj,value)->{// datasource.db.url = jdbc:h2:mem:testMix
       String fullKey = trim(keyObj);
       String k = fullKey.toLowerCase(Locale.ENGLISH);
 
       String propertyName = "";
-      for (String pre : SETTINGS_PREFIX){// 1) somedb. 2) datasource.somedb.  E.g.:  db., datasource.db.
-        pre = trim(pre).toLowerCase(Locale.ENGLISH).replace("%db%", db);
-        if (k.startsWith(pre)){
+      for (String pre : prefixes){// 1) somedb. 2) datasource.somedb.  E.g.:  db., datasource.db.
+        if (!pre.isEmpty() && k.startsWith(pre)){
           propertyName = fullKey.substring(pre.length());
           k = k.substring(pre.length());
-          break;
+          break;// found
         }
       }
       if (propertyName.isEmpty()){

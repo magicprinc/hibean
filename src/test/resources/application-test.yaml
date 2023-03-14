@@ -44,3 +44,7 @@ spring:
     url: jdbc:h2:mem:fromSprng
     username: ufoo
     password: pbar
+
+spring.DataSource.test_spring.HiKari:
+  max-lifetime: 54321
+  ReadOnly: true
