@@ -1,7 +1,7 @@
 # Hi! Bean!
 [HikariCP](https://github.com/brettwooldridge/HikariCP) module for [Ebean ORM](https://ebean.io/)
 
-Seamless drop-in replacement of Ebean's default connection pool.
+Seamless drop-in replacement for Ebean's default connection pool.
 
 [![Java CI with Gradle](https://github.com/magicprinc/hibean/actions/workflows/gradle.yml/badge.svg)](https://github.com/magicprinc/hibean/actions/workflows/gradle.yml)
 
