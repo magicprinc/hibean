@@ -127,7 +127,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     return new HikariDataSource(hc);
   }
 
-  private static final List<String> VENDOR_SETTINGS_PREFIX = Arrays.asList("datasource.", "driver.");
+  private static final String[] VENDOR_SETTINGS_PREFIX = {"datasource.", "driver."};
 
   /** @see PropertyElf#setTargetFromProperties*/
   static void setTargetFromProperties (HikariConfig hc, Properties p){
@@ -141,12 +141,12 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
       for (String prefix : VENDOR_SETTINGS_PREFIX){
         if (k.startsWith(prefix)){
           hc.addDataSourceProperty(key.substring(prefix.length()), value);
-          return;// ~ continue
+          return;// ~ break
         }
       }//else: HikariConfig.setter
       String javaPropertyName = toCamelFromUnderscore(key.replace('-', '_'));// spring.boot-key_fmt
       boolean success = setProperty(hc, javaPropertyName, value, methods);
-      if (!success && !javaPropertyName.equals(key))// fallback to property_name as is
+      if (!success && !javaPropertyName.equals(key))// fallback to property_name as-is
         setProperty(hc, key, value, methods);
     });
   }
@@ -311,7 +311,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
   }
 
   private static final Pattern SPACE_AND_UNDERSCORE = Pattern.compile("[\\s_]", Pattern.CASE_INSENSITIVE|Pattern.UNICODE_CHARACTER_CLASS);
-  private static final String PREFIX = trim(System.getProperty("hibean.prefix", "datasource.")).toLowerCase(Locale.ENGLISH);
+  static final String[] SETTINGS_PREFIX = { "%db%", System.getProperty("hibean.prefix", "datasource.%db%") };
 
   /**
    * Filter very wide application.properties using the prefix and db name (if supplied) to search for the hikari properties.
@@ -324,26 +324,26 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
    * }</pre>
    */
   void filter (Map<String,String> aliasMap, Properties src, Properties dst, String dbName) {
-    String p1 =  dbName.isEmpty() ? "db." : dbName.toLowerCase()+'.'; // db. or mydb.
-    String p2 = PREFIX + p1; // datasource.db. or datasource.mydb.
+    String db =  dbName.isEmpty() ? "db." : dbName.toLowerCase()+'.'; // db. or mydb.
 
-    src.forEach((keyObj,value)->{
+    src.forEach((keyObj,value)->{// datasource.db.url = jdbc:h2:mem:testMix
       String fullKey = trim(keyObj);
       String k = fullKey.toLowerCase(Locale.ENGLISH);
 
-      String propertyName;
-      if (k.startsWith(p1)){
-        propertyName = fullKey.substring(p1.length());
-        k = k.substring(p1.length());
-
-      } else if (k.startsWith(p2)){
-        propertyName = fullKey.substring(p2.length());
-        k = k.substring(p2.length());
-      } else {
-        return;// == continue
+      String propertyName = "";
+      for (String pre : SETTINGS_PREFIX){// 1) somedb. 2) datasource.somedb.  E.g.:  db., datasource.db.
+        pre = trim(pre).toLowerCase(Locale.ENGLISH).replace("%db%", db);
+        if (k.startsWith(pre)){
+          propertyName = fullKey.substring(pre.length());
+          k = k.substring(pre.length());
+          break;
+        }
+      }
+      if (propertyName.isEmpty()){
+        return;// == continue == skip lines without prefix
       }
 
-      k = k.replace("-","").replace("_","");
+      k = k.replace("-","").replace("_",""); // [datasource.db.] max-Connections → maxconnections
       String alias = trim(aliasMap.get(k));
       if (!alias.isEmpty()){
         propertyName = alias; // e.g. url (ebean name) → jdbcUrl (hikari name)

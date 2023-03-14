@@ -91,4 +91,21 @@ class HikariEbeanDataSourcePoolTest {
     assertEquals("NETWORK_TIMEOUT=51000|NO_UPGRADE=true|RECOVER_TEST=true", s);
     assertEquals("select 1;\r\nselect 2", hds.getConnectionInitSql());
   }
+
+
+  @Test void testAnotherPrefix () {
+    var save = HikariEbeanDataSourcePool.SETTINGS_PREFIX.clone();
+    try {
+      HikariEbeanDataSourcePool.SETTINGS_PREFIX[1] = "spring.datasource.";
+
+      var db = DB.byName("name_is_not_used_in_prefix_above");
+      var pool = (HikariEbeanDataSourcePool) db.dataSource();
+      assertEquals("jdbc:h2:mem:fromSprng", pool.ds.getJdbcUrl());
+      assertEquals("ufoo", pool.ds.getUsername());
+      assertEquals("pbar", pool.ds.getPassword());
+
+    } finally {
+      System.arraycopy(save, 0, HikariEbeanDataSourcePool.SETTINGS_PREFIX, 0, save.length);
+    }
+  }
 }
