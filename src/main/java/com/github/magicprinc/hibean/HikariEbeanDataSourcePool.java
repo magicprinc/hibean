@@ -311,6 +311,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
   }
 
   private static final Pattern SPACE_AND_UNDERSCORE = Pattern.compile("[\\s_]", Pattern.CASE_INSENSITIVE|Pattern.UNICODE_CHARACTER_CLASS);
+  private static final String PREFIX = trim(System.getProperty("hibean.prefix", "datasource.")).toLowerCase(Locale.ENGLISH);
 
   /**
    * Filter very wide application.properties using the prefix and db name (if supplied) to search for the hikari properties.
@@ -324,7 +325,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
    */
   void filter (Map<String,String> aliasMap, Properties src, Properties dst, String dbName) {
     String p1 =  dbName.isEmpty() ? "db." : dbName.toLowerCase()+'.'; // db. or mydb.
-    String p2 = "datasource." + p1; // datasource.db. or datasource.mydb.
+    String p2 = PREFIX + p1; // datasource.db. or datasource.mydb.
 
     src.forEach((keyObj,value)->{
       String fullKey = trim(keyObj);
