@@ -58,64 +58,72 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
 
   final HikariDataSource ds;
 
-  public HikariEbeanDataSourcePool (HikariDataSource ds) {
-    this.ds = ds;
-  }//new
+  public HikariEbeanDataSourcePool (HikariDataSource ds){ this.ds = ds; }//new
 
-  public HikariEbeanDataSourcePool (String poolName, DataSourceConfig config) {
-    poolName = trim(poolName);
-    Map<String,String> aliasMap = alias();
+  public HikariEbeanDataSourcePool (String callerPoolName, DataSourceConfig config) {
+    String tmpTrimPoolName = trim(callerPoolName);
+    var defaultDatabaseName = determineDefaultServerName();
+    String hikariPoolName = tmpTrimPoolName.isEmpty() || tmpTrimPoolName.equals(defaultDatabaseName) ? "ebean"
+        : "ebean."+ tmpTrimPoolName;
 
     Properties configProperties = Config.asProperties();
     Properties sysProp = System.getProperties();
+    Map<String,String> aliasMap = alias();
+    String[] prefixes = collectPrefixes(sysProp, configProperties);
+
     Properties dst = new Properties(configProperties.size() + 31);
-
-    filter(aliasMap, configProperties,  dst, poolName);
-    filter(aliasMap, sysProp, dst, poolName);
-
-    String copyFromDb = trim(dst.getProperty("copyFrom"));
-    if (!copyFromDb.isEmpty()){// useful in tests: ^ workaround for main/test settings collisions
-      dst.clear();// mix of main and test configs
-      filter(aliasMap, configProperties,  dst, copyFromDb);
-      filter(aliasMap, sysProp, dst, copyFromDb);
+    {//1. search settings with our db_name
+      String databaseName = makeDatabaseNamePrefix(tmpTrimPoolName, defaultDatabaseName, sysProp, configProperties);
+      filter(aliasMap, configProperties, dst, databaseName, prefixes);
+      filter(aliasMap, sysProp, dst, databaseName, prefixes);// System.properties overwrite file.properties
     }
-    String[] appendFrom = trim(dst.getProperty("appendFrom")).split("[;,]");
-    for (String db : appendFrom){// add settings from another db
-      db = trim(db);
-      if (!db.isEmpty()){
-        filter(aliasMap, configProperties,  dst, db);
-        filter(aliasMap, sysProp, dst, db);
+    {//2. use settings of another db_name
+      String copyFromDb = trim(dst.getProperty("copyFrom"));
+      if (!copyFromDb.isEmpty()){// useful in tests: ^ workaround for main/test settings collisions
+        dst.clear();// mix of main and test configs
+        filter(aliasMap, configProperties, dst, copyFromDb, prefixes);
+        filter(aliasMap, sysProp, dst, copyFromDb, prefixes);
       }
     }
-
-    String confFile = trim(dst.getProperty("confFile"));
-    if (!confFile.isEmpty()){// load from another ^ <hikari>.properties file:  full delegation!
-      ds = createDataSource(new HikariConfig(confFile), poolName);
-      return;
+    {//3. add settings from "template" db_name
+      String[] appendFrom = trim(dst.getProperty("appendFrom")).split("[;,]");
+      for (String db : appendFrom){// add settings from another db
+        db = trim(db);
+        if (!db.isEmpty()){
+          filter(aliasMap, configProperties, dst, db, prefixes);
+          filter(aliasMap, sysProp, dst, db, prefixes);
+        }
+      }
     }
-
+    {//4. load from another <hikari>.properties file == full delegation!
+      String confFile = trim(dst.getProperty("confFile"));
+      if (!confFile.isEmpty()){
+        ds = createDataSource(new HikariConfig(confFile), hikariPoolName);
+        return;
+      }
+    }
     HikariConfig hc = new HikariConfig();
-    hc.setPoolName(poolName.isEmpty() ? "ebean" : "ebean."+ poolName);// helps to know poolName during init phase
+    hc.setPoolName(hikariPoolName);// helps to know poolName during init phase
     String propertyNames = normValue(trim(dst.getProperty("propertyNames")))
         .replace("-","").replace("then","").replace("only","").replace("than","");
-    // hikari-ebean, ebean-hikari (default), hikari, ebean
-    if ("hikari".equalsIgnoreCase(propertyNames)){
-      setTargetFromProperties(hc, dst);
-      ds = createDataSource(hc, poolName);// only hikari property names are used
 
-    } else if ("hikariebean".equalsIgnoreCase(propertyNames)){
+    if ("hikari".equalsIgnoreCase(propertyNames)){// hikari only
+      setTargetFromProperties(hc, dst);
+      ds = createDataSource(hc, hikariPoolName);// only hikari property names are used
+
+    } else if ("hikariebean".equalsIgnoreCase(propertyNames)){// hikari-then-ebean
       setTargetFromProperties(hc, dst);//1. hikari
       mergeFromDataSourceConfig(hc, config);//2. ebean (overrides)
-      ds = createDataSource(hc, poolName);
+      ds = createDataSource(hc, hikariPoolName);
 
-    } else if ("ebean".equalsIgnoreCase(propertyNames)){
+    } else if ("ebean".equalsIgnoreCase(propertyNames)){// ebean only
       mergeFromDataSourceConfig(hc, config);
-      ds = createDataSource(hc, poolName);
+      ds = createDataSource(hc, hikariPoolName);
 
-    } else {// everything else: ebean-hikari
+    } else {// everything else: ebean-hikari (default)
       mergeFromDataSourceConfig(hc, config);//1.ebean
       setTargetFromProperties(hc, dst);//2.hikari (overrides)
-      ds = createDataSource(hc, poolName);
+      ds = createDataSource(hc, hikariPoolName);
     }
   }//new
 
@@ -125,15 +133,56 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     } catch (Throwable ignore){
       // no Micrometer in classPath; see also hikariConfig.setRegisterMbeans(true)
     }
-    hc.setPoolName(poolName.isEmpty() ? "ebean" : "ebean."+ poolName);
+    hc.setPoolName(poolName);
     return new HikariDataSource(hc);
   }
 
+  /** Default database has no name: "". What prefix should we use in config to filter/find its settings (default: db.)
+   If you choose empty "" name: it will disable "db_name.property_name" keys. */
+  protected String makeDatabaseNamePrefix (String trimCallerPoolName, String defaultDatabaseName, Properties... sysPropThenConfig){
+    if (trimCallerPoolName.isEmpty() || trimCallerPoolName.equals(defaultDatabaseName)){// default database
+      for (var p : sysPropThenConfig){
+
+        for (var e : p.entrySet()){
+          if ("ebean.hikari.defaultdb".equals(stripKey(e.getKey()))){
+            var db = trim(e.getValue());
+            return db.isEmpty() ? "" : db + '.';
+          }
+        }
+      }
+      return defaultDatabaseName;// default prefix for default database (usually db)
+
+    } else {// named database e.g: my-DB_Name
+      return trimCallerPoolName + '.';//e.g: my-db_name.
+    }
+  }
+
+  /**
+   * Determine and return the default server name checking system environment variables and then global properties.
+   * @see io.ebean.DbPrimary#determineDefaultServerName
+   */
+  private static String determineDefaultServerName () {
+    String defaultServerName = System.getenv("EBEAN_DB");
+    defaultServerName = System.getProperty("db", defaultServerName);
+    defaultServerName = System.getProperty("ebean_db", defaultServerName);
+    if (trim(defaultServerName).isEmpty()) {
+      defaultServerName = Config.getOptional("datasource.default").orElse(null);
+      if (trim(defaultServerName).isEmpty()) {
+        defaultServerName = Config.getOptional("ebean.default.datasource").orElse(null);
+      }
+    }
+    if (defaultServerName == null) {
+      defaultServerName = "db";
+    }
+    return trim(defaultServerName);
+  }
+
+  /** sub-prefix for real-vendor-jdbc-driver settings (e.g. MSSQL statementPoolingCacheSize)*/
   private static final String[] VENDOR_SETTINGS_PREFIX = {"datasource.", "driver."};
 
   /** @see PropertyElf#setTargetFromProperties*/
   static void setTargetFromProperties (HikariConfig hc, Properties p){
-    p.remove("appendFrom");  p.remove("copyFrom");  p.remove("confFile");
+    p.remove("appendFrom");  p.remove("copyFrom");  p.remove("confFile");  p.remove("propertyNames");
 
     List<Method> methods = Arrays.asList(hc.getClass().getMethods());
     p.forEach((keyObj, value) -> {
@@ -245,22 +294,23 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
   protected Map<String,String> alias (){
     try {
       InputStream is = getClass().getResourceAsStream("/ebean/ehpalias.properties");
-      if (is == null){
-        return Collections.emptyMap();
-      }
+      if (is == null){ return Collections.emptyMap(); }// can't be! There is the file!
       try (is){
         Properties p = new Properties();
         p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
         HashMap<String,String> m = new HashMap<>(p.size()+31);
-        p.forEach((keyObj,valueObj)->{
-          String key = trim(keyObj).toLowerCase(Locale.ENGLISH).replace("-", "").replace("_", "");
-          m.put(key, trim(valueObj));
-        });
+        for (var e : p.entrySet()){
+          m.put(stripKey(e.getKey()), trim(e.getValue()));
+        }
         return m;
       }
     } catch (Throwable ignore){
       return Collections.emptyMap();
     }
+  }
+  /** trim, lowerCase(EN), remove - and _ */
+  private String stripKey (Object key){
+    return trim(key).toLowerCase(Locale.ENGLISH).replace("-", "").replace("_", "");
   }
 
   void sets (String dataSourceConfig, Consumer<String> setter){
@@ -311,9 +361,23 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     }
     return s;
   }
-
   private static final Pattern SPACE_AND_UNDERSCORE = Pattern.compile("[\\s_]", Pattern.CASE_INSENSITIVE|Pattern.UNICODE_CHARACTER_CLASS);
-  static final String[] SETTINGS_PREFIX = { "%db%", System.getProperty("hibean.prefix", "datasource.%db%"), "spring.datasource.%db%hikari." };
+
+  /** Prefixes to filter our (hikari) property names. Default: db. → datasource.db → spring.datasource.db.hikari. */
+  protected String[] collectPrefixes (Properties sysProp, Properties config){
+    String[] p = new String[10];
+    p[1] = "%db%";
+    p[3] = "datasource.%db%";
+    p[5] = "spring.datasource.%db%hikari.";
+    p[7] = sysProp.getProperty("ebean.hikari.prefix", config.getProperty("ebean.hikari.prefix"));
+
+    for (int i=0; i<p.length; i++){
+      String key = "ebean.hikari.prefix."+i;
+      p[i] = trim(sysProp.getProperty(key, config.getProperty(key, p[i]))).toLowerCase(Locale.ENGLISH);
+    }
+    Arrays.sort(p, Comparator.comparing(String::length).reversed());
+    return p;
+  }
 
   /**
    * Filter very wide application.properties using the prefix and db name (if supplied) to search for the hikari properties.
@@ -325,10 +389,13 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
    *
    * }</pre>
    */
-  void filter (Map<String,String> aliasMap, Properties src, Properties dst, String dbName) {
-    String db =  dbName.isEmpty() ? "db." : dbName.toLowerCase()+'.'; // db. or mydb.
-    var prefixes = Arrays.stream(SETTINGS_PREFIX)
-        .map(pre->trim(pre).toLowerCase(Locale.ENGLISH).replace("%db%", db))
+  void filter (Map<String,String> aliasMap, Properties src, Properties dst, String dbName, String[] prefixTemplates){
+    dbName = trim(dbName).toLowerCase(Locale.ENGLISH);
+    final String db = dbName + (dbName.isEmpty() || dbName.endsWith(".") ? "" : ".");
+
+    var prefixes = Arrays.stream(prefixTemplates)
+        .map(pre -> trim(pre).toLowerCase(Locale.ENGLISH).replace("%db%", db))
+        .filter(pre -> !pre.isEmpty())
         .sorted(Comparator.comparing(String::length).reversed()).toArray(String[]::new);
 
     src.forEach((keyObj,value)->{// datasource.db.url = jdbc:h2:mem:testMix
@@ -357,19 +424,14 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     });
   }
 
-  @Override public String name () {
-    return ds.getPoolName();
-  }
+  @Override public String name () { return ds.getPoolName(); }
 
   @Override public int size () {
     HikariPoolMXBean hPool = ds.getHikariPoolMXBean();
     return hPool.getTotalConnections();
   }
 
-
-  @Override public boolean isAutoCommit () {
-    return ds.isAutoCommit();
-  }
+  @Override public boolean isAutoCommit () { return ds.isAutoCommit(); }
 
   @Override public boolean isOnline () {
     return ds.isRunning() && !ds.isClosed();
@@ -424,10 +486,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     };
   }
 
-
-  @Override public SQLException dataSourceDownReason () {
-    return null;
-  }
+  @Override public SQLException dataSourceDownReason () { return null; }
 
   @Override public void setMaxSize (int max) {
     HikariConfigMXBean cfg = ds.getHikariConfigMXBean();

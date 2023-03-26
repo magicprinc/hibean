@@ -48,3 +48,9 @@ spring:
 spring.DataSource.test_spring.HiKari:
   max-lifetime: 54321
   ReadOnly: true
+
+quarkus.datasource.url: jdbc:h2:mem:evenQuarkus
+quarkus.datasource.driver: org.h2.Driver
+quarkus.datasource.username: test
+quarkus.datasource.password: 1234
+quarkus.datasource.max-size: 93

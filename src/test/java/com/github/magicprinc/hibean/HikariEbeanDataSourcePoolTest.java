@@ -94,9 +94,8 @@ class HikariEbeanDataSourcePoolTest {
 
 
   @Test void testAnotherPrefix () {
-    var save = HikariEbeanDataSourcePool.SETTINGS_PREFIX.clone();
     try {
-      HikariEbeanDataSourcePool.SETTINGS_PREFIX[1] = "spring.datasource.";
+      System.setProperty("ebean.hikari.prefix", "spring.datasource.");
 
       var db = DB.byName("test_spring");
       var pool = (HikariEbeanDataSourcePool) db.dataSource();
@@ -106,8 +105,43 @@ class HikariEbeanDataSourcePoolTest {
       assertTrue(pool.ds.isReadOnly());
       assertEquals(54321, pool.ds.getMaxLifetime());
 
+      System.setProperty("ebean.hikari.prefix", "quarkus.datasource.");
+      System.setProperty("ebean.hikari.default-Db", "");
+      var dataSourcePool = (HikariEbeanDataSourcePool) new HikariEbeanConnectionPoolFactory().createPool(null, new DataSourceConfig());
+      assertEquals("jdbc:h2:mem:evenQuarkus", dataSourcePool.ds.getJdbcUrl());
+      assertEquals("org.h2.Driver", dataSourcePool.ds.getDriverClassName());
+      assertEquals("test", dataSourcePool.ds.getUsername());
+      assertEquals("1234", dataSourcePool.ds.getPassword());
+      assertEquals(93, dataSourcePool.ds.getMaximumPoolSize());
+
     } finally {
-      System.arraycopy(save, 0, HikariEbeanDataSourcePool.SETTINGS_PREFIX, 0, save.length);
+      Properties p = System.getProperties();
+      p.remove("ebean.hikari.prefix");
+      p.remove("ebean.hikari.default-Db");
     }
+  }
+
+
+  @Test void _emptyPropertyIsNotAbsentProperty () {
+    System.setProperty("fake_empty_prop", "");
+    assertTrue(System.getProperties().containsKey("fake_empty_prop"));
+    assertEquals("", System.getProperty("fake_empty_prop"));
+    assertEquals("", System.getProperty("fake_empty_prop", "default"));
+  }
+
+
+  @Test void _checkDefaultDbProperties () {
+    var ds = (HikariEbeanDataSourcePool) DB.getDefault().dataSource();
+    assertEquals("jdbc:h2:mem:my_app", ds.ds.getJdbcUrl());// from ebean-test platform
+    assertEquals("org.h2.Driver", ds.ds.getDriverClassName());
+    assertNull(ds.ds.getDataSourceClassName());
+    assertEquals("sa", ds.ds.getUsername());
+    assertNull(ds.ds.getPassword());
+    assertEquals("ebean", ds.ds.getPoolName());
+    assertEquals(1_800_000, ds.ds.getMaxLifetime());// default 30 mi
+    assertEquals(31, ds.ds.getMaximumPoolSize());
+    assertEquals(2, ds.ds.getMinimumIdle());
+    assertEquals(61_000, ds.ds.getIdleTimeout());
+    assertNull(ds.ds.getConnectionInitSql());
   }
 }
