@@ -3,10 +3,10 @@ plugins {
   id("idea")
   id 'maven-publish'
 
-  id("io.ebean") version "latest.release"
+  alias(libs.plugins.ebean)
 
-  id("name.remal.sonarlint") version "latest.release" // https://github.com/remal-gradle-plugins/sonarlint + https://lift.sonatype.com/
-  id("net.ltgt.errorprone")  version "latest.release" // https://errorprone.info/
+  alias(libs.plugins.sonarLint)
+  alias(libs.plugins.errorProne)
 }
 
 repositories {
@@ -20,8 +20,6 @@ idea {
     downloadSources = true
   }
 }
-
-sourceCompatibility = 8
 
 tasks.withType(JavaCompile).configureEach {
   options.encoding = 'UTF-8'
@@ -45,27 +43,24 @@ dependencies {
   annotationProcessor("io.ebean:querybean-generator:latest.release")
 
   implementation("io.ebean:ebean:latest.release")
-  implementation('com.zaxxer:HikariCP:latest.release')
+  implementation libs.hikariCP
 
-  compileOnly('io.micrometer:micrometer-core:latest.release')
+  compileOnly libs.micrometer.core
 
   //*** TEST TEST TEST
 
-  testImplementation(platform('org.junit:junit-bom:latest.release'))
-  testImplementation('org.junit.jupiter:junit-jupiter')
-  testImplementation('org.junit.vintage:junit-vintage-engine')
-  testImplementation('org.mockito:mockito-inline:latest.release')
+  testImplementation(platform libs.junit.bom)
+  testImplementation libs.bundles.junit
 
-  testImplementation("com.h2database:h2:2.1.214")
+  testImplementation libs.h2
   testImplementation("io.ebean:ebean-querybean:latest.release")
 
   testImplementation("io.ebean:ebean-test:latest.release")
 
-  testImplementation("org.slf4j:slf4j-api:1.7.+", "org.slf4j:jcl-over-slf4j:1.7.+", "org.slf4j:log4j-over-slf4j:1.7.+", "org.slf4j:jul-to-slf4j:1.7.+")
-  testImplementation("ch.qos.logback:logback-classic:1.2.+")
+  testImplementation libs.bundles.logback
 }
 // https://tomgregory.com/how-to-exclude-gradle-dependencies/
-configurations.all { // .implementation ?
+configurations.configureEach { // .implementation ?
   exclude group: 'io.ebean', module: 'ebean-datasource'
 }
 
@@ -77,17 +72,18 @@ test {
   useJUnitPlatform()
   testLogging {
     events "passed", "skipped", "failed"
+    showStandardStreams = true // show standard out & err of the test JVM on the console
+    showExceptions = true
+    exceptionFormat = 'full'
   }
-  maxHeapSize = "500m"
   enableAssertions = true
+  maxHeapSize = "500m"
 
-  testLogging.showStandardStreams = true // show standard out & err of the test JVM on the console
-  testLogging.exceptionFormat = 'full'
+  systemProperty("slf4j.detectLoggerNameMismatch", "true")
+  systemProperty("file.encoding", "UTF-8")
 
-  System.setProperty("slf4j.detectLoggerNameMismatch", "true")
-  System.setProperty("file.encoding", "UTF-8")
-
-  System.setProperty("user.language", "en")
+  systemProperty("user.language", "en")
+  Locale.setDefault(new Locale("en", "US"));
 }
 sonarLint {
   isGeneratedCodeIgnored = true
@@ -109,4 +105,11 @@ java {
 javadoc {
   options.encoding = 'UTF-8'
   options.addBooleanOption('html5', true)
+}
+
+tasks.withType(AbstractArchiveTask).tap {
+  configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+  }
 }

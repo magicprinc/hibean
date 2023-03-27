@@ -1,0 +1,44 @@
+// https://docs.gradle.org/7.6/userguide/multi_project_builds.html + https://docs.gradle.org/7.6/samples
+
+rootProject.name = 'hibean'
+
+// https://docs.gradle.org/current/userguide/platforms.html
+dependencyResolutionManagement {
+  versionCatalogs {
+    libs {
+      version('ebeanVersion', "latest.release")
+      version("slf4jVersion", "1.7.+")
+
+      library("hikariCP", "com.zaxxer", "HikariCP").version("latest.release")
+      library("micrometer-core", "io.micrometer", "micrometer-core").version("latest.release")
+
+      library("junit-bom",  "org.junit","junit-bom").version("latest.release")
+      library("junit-jupiter",  "org.junit.jupiter","junit-jupiter").withoutVersion()
+      library("junit-vintage-engine",  "org.junit.vintage","junit-vintage-engine").withoutVersion()
+      library("mockito", "org.mockito", "mockito-inline").version("latest.release")
+
+      library("h2",  "com.h2database","h2").version("latest.release")// 2.1.214
+
+      library("slf4j-api",  "org.slf4j","slf4j-api").versionRef("slf4jVersion")
+
+      library("jcl-over-slf4j",  "org.slf4j","jcl-over-slf4j").versionRef("slf4jVersion")
+      library("log4j-over-slf4j",  "org.slf4j","log4j-over-slf4j").versionRef("slf4jVersion")
+      library("jul-to-slf4j",  "org.slf4j","jul-to-slf4j").versionRef("slf4jVersion")
+      library("logback-classic",  "ch.qos.logback","logback-classic").version("1.2.+")
+
+      //*** libs.bundles ***
+      bundle("junit", ["junit-bom", "junit-jupiter", "junit-vintage-engine", "mockito"])
+      bundle("logback", ["slf4j-api", "jcl-over-slf4j","log4j-over-slf4j","jul-to-slf4j", "logback-classic"])
+
+      //*** libs.plugins ***
+      plugin("lombok", "io.freefair.lombok").version("6.+") //old: id 'io.franzbecker.gradle-lombok' version 'latest.release'
+
+      plugin("sonarLint", "name.remal.sonarlint").version("3.0.+") // https://github.com/remal-gradle-plugins/sonarlint + https://lift.sonatype.com/ + https://www.sonarsource.com/products/sonarlint/
+      plugin("errorProne", "net.ltgt.errorprone").version("3.0.+") // https://errorprone.info/ + https://github.com/tbroyer/gradle-errorprone-plugin
+
+      plugin("ebean",  "io.ebean").versionRef("ebeanVersion")
+    }
+  }
+}
+
+// include 'sub-project'
