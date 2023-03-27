@@ -27,7 +27,7 @@ dependencyResolutionManagement {
       library("logback-classic",  "ch.qos.logback","logback-classic").version("1.2.+")
 
       //*** libs.bundles ***
-      bundle("junit", ["junit-bom", "junit-jupiter", "junit-vintage-engine", "mockito"])
+      bundle("junit", ["junit-jupiter", "junit-vintage-engine", "mockito"])
       bundle("logback", ["slf4j-api", "jcl-over-slf4j","log4j-over-slf4j","jul-to-slf4j", "logback-classic"])
 
       //*** libs.plugins ***
