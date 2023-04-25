@@ -105,6 +105,7 @@ class HikariEbeanDataSourcePoolTest {
       assertTrue(pool.ds.isReadOnly());
       assertEquals(54321, pool.ds.getMaxLifetime());
 
+      System.setProperty("ebean.hikari.prefix.9", "");// disable spring
       System.setProperty("ebean.hikari.prefix", "quarkus.datasource.");
       System.setProperty("ebean.hikari.default-Db", "");
       var dataSourcePool = (HikariEbeanDataSourcePool) new HikariEbeanConnectionPoolFactory().createPool(null, new DataSourceConfig());

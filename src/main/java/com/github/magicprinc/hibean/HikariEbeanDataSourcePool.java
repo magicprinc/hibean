@@ -365,11 +365,13 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
 
   /** Prefixes to filter our (hikari) property names. Default: db. → datasource.db → spring.datasource.db.hikari. */
   protected String[] collectPrefixes (Properties sysProp, Properties config){
-    String[] p = new String[10];
+    String[] p = new String[20];
     p[1] = "%db%";
     p[3] = "datasource.%db%";
     p[5] = "spring.datasource.%db%hikari.";
     p[7] = sysProp.getProperty("ebean.hikari.prefix", config.getProperty("ebean.hikari.prefix"));
+    p[9] = "spring.datasource.%db%";
+    p[11] = "quarkus.datasource.%db%";
 
     for (int i=0; i<p.length; i++){
       String key = "ebean.hikari.prefix."+i;
