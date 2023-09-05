@@ -61,3 +61,6 @@ You can merge (reuse) several db configs
 ```
 datasource.db.appendFrom = template1, extra
 ```
+
+Get it!
+https://jitpack.io/
