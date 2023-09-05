@@ -12,6 +12,7 @@ plugins {
 repositories {
   mavenLocal()
   mavenCentral()
+  maven { url "https://jitpack.io" }
 }
 
 idea {
@@ -23,7 +24,7 @@ idea {
 
 tasks.withType(JavaCompile).configureEach {
   options.encoding = 'UTF-8'
-  options.compilerArgs.addAll(['-Xlint:all', '-parameters', '-g', '-Xmaxwarns', '999'])
+  options.compilerArgs.addAll(['-Xlint:all,-serial', '-parameters', '-g', '-Xmaxwarns', '999'])
   options.release.set(11) // javac --release 7..19+
   options.deprecation = true
 
@@ -31,7 +32,6 @@ tasks.withType(JavaCompile).configureEach {
     enabled = true  // <<<!!! You can disable Error-Prone here!
     disableWarningsInGeneratedCode = true
     excludedPaths = ".*/build/gen.*/.*"
-    disable("ParameterName")
     disable("UnusedVariable")
     disable("MissingSummary")
     errorproneArgs = ["-XepExcludedPaths:.*/test/.*"]
@@ -107,9 +107,7 @@ javadoc {
   options.addBooleanOption('html5', true)
 }
 
-tasks.withType(AbstractArchiveTask).tap {
-  configureEach {
-    preserveFileTimestamps = false
-    reproducibleFileOrder = true
-  }
+tasks.withType(AbstractArchiveTask).configureEach {
+  preserveFileTimestamps = false
+  reproducibleFileOrder = true
 }
