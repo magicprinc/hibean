@@ -18,7 +18,7 @@ repositories {
 tasks.withType(JavaCompile).configureEach {
   options.encoding = 'UTF-8'
   options.compilerArgs.addAll(['-Xlint:all,-serial', '-parameters', '-g', '-Xmaxwarns', '999'])
-  options.release.set(17) // javac --release 7..19+
+  options.release.set(11) // javac --release 7..19+
   options.deprecation = true
 
   options.errorprone {
