@@ -4,6 +4,7 @@
 Seamless drop-in replacement for Ebean's default connection pool.
 
 [![Java CI with Gradle](https://github.com/magicprinc/hibean/actions/workflows/gradle.yml/badge.svg)](https://github.com/magicprinc/hibean/actions/workflows/gradle.yml)
+[![](https://jitpack.io/v/magicprinc/hibean.svg)](https://jitpack.io/#magicprinc/hibean)
 
 ## 1. Install
 ```
