@@ -1,7 +1,55 @@
-out/
-build/
-generated/
+# Gradle 
 .gradle/
+
+build/
+**/build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+dist/
+
+target/
+
+# IntelliJ IDEA
 .idea/
+*.ipr
 *.iml
-gradle/wrapper/
+*.iws
+
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# Eclipse
+.classpath
+.project
+.settings
+classes/
+
+# LOGs
+*.log
+logs/
+!**/src/main/**/logs/
+!**/src/test/**/logs/
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+replay_pid*
+
+# mac
+.DS_Store 
+._.DS_Store
+
+*.tmp
+*.bak
+*.$$$
+*.~*
+*.*~
+*.orig
+*.swp
+
+*.class
+*.war
+*.ear
+
+*.sqlite*
