@@ -31,10 +31,10 @@ dependencyResolutionManagement {
       bundle("logback", ["slf4j-api", "jcl-over-slf4j","log4j-over-slf4j","jul-to-slf4j", "logback-classic"])
 
       //*** libs.plugins ***
-      plugin("lombok", "io.freefair.lombok").version("6.+") //old: id 'io.franzbecker.gradle-lombok' version 'latest.release'
+      plugin("lombok", "io.freefair.lombok").version("latest.release") //old: id 'io.franzbecker.gradle-lombok' version 'latest.release'
 
-      plugin("sonarLint", "name.remal.sonarlint").version("3.0.+") // https://github.com/remal-gradle-plugins/sonarlint + https://lift.sonatype.com/ + https://www.sonarsource.com/products/sonarlint/
-      plugin("errorProne", "net.ltgt.errorprone").version("3.0.+") // https://errorprone.info/ + https://github.com/tbroyer/gradle-errorprone-plugin
+      plugin("sonarLint", "name.remal.sonarlint").version("latest.release") // https://github.com/remal-gradle-plugins/sonarlint + https://lift.sonatype.com/ + https://www.sonarsource.com/products/sonarlint/
+      plugin("errorProne", "net.ltgt.errorprone").version("latest.release") // https://errorprone.info/ + https://github.com/tbroyer/gradle-errorprone-plugin
 
       plugin("ebean",  "io.ebean").versionRef("ebeanVersion")
     }

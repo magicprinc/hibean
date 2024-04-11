@@ -353,7 +353,6 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
   }
 
   static String normValue (Object value) {
-    if (value == null){ return null; }
     String s = Normalizer.normalize(value.toString(), Normalizer.Form.NFC);
 
     if (isNumeric(s)){
@@ -398,7 +397,8 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     var prefixes = Arrays.stream(prefixTemplates)
         .map(pre -> trim(pre).toLowerCase(Locale.ENGLISH).replace("%db%", db))
         .filter(pre -> !pre.isEmpty())
-        .sorted(Comparator.comparing(String::length).reversed()).toArray(String[]::new);
+        .sorted(Comparator.comparing(String::length).reversed())
+				.toArray(String[]::new);
 
     src.forEach((keyObj,value)->{// datasource.db.url = jdbc:h2:mem:testMix
       String fullKey = trim(keyObj);
@@ -422,7 +422,9 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
         propertyName = alias; // e.g. url (ebean name) → jdbcUrl (hikari name)
       }
 
-      dst.put(propertyName, normValue(value));
+			if (value != null){
+				dst.setProperty(propertyName, normValue(value));
+			}
     });
   }
 

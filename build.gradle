@@ -15,25 +15,16 @@ repositories {
   maven { url "https://jitpack.io" }
 }
 
-idea {
-  module {
-    downloadJavadoc = true
-    downloadSources = true
-  }
-}
-
 tasks.withType(JavaCompile).configureEach {
   options.encoding = 'UTF-8'
   options.compilerArgs.addAll(['-Xlint:all,-serial', '-parameters', '-g', '-Xmaxwarns', '999'])
-  options.release.set(11) // javac --release 7..19+
+  options.release.set(17) // javac --release 7..19+
   options.deprecation = true
 
   options.errorprone {
     enabled = true  // <<<!!! You can disable Error-Prone here!
     disableWarningsInGeneratedCode = true
     excludedPaths = ".*/build/gen.*/.*"
-    disable("UnusedVariable")
-    disable("MissingSummary")
     errorproneArgs = ["-XepExcludedPaths:.*/test/.*"]
   }
 }
@@ -95,6 +86,7 @@ publishing {
     maven(MavenPublication) {
       //groupId in gradle.properties;  artifactId == folder name
       from components.java
+			suppressPomMetadataWarningsFor('runtimeElements')
     }
   }
 }
@@ -103,6 +95,13 @@ java {
   // withJavadocJar()
 }
 
+idea { module { downloadJavadoc = true;	downloadSources = true } }
+
+jar {
+	from generatePomFileForMavenPublication {
+		rename('pom-default.xml', "META-INF/maven/${project.group}/${project.name}/pom.xml")
+	}
+}
 tasks.withType(AbstractArchiveTask).configureEach {
   preserveFileTimestamps = false
   reproducibleFileOrder = true
