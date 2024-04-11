@@ -1,6 +1,6 @@
 plugins {
-  id("java")
-  id("idea")
+  id "java-library"
+  id "idea"
   id 'maven-publish'
 
   alias(libs.plugins.ebean)
@@ -31,10 +31,13 @@ tasks.withType(JavaCompile).configureEach {
 
 dependencies {
   errorprone("com.google.errorprone:error_prone_core:latest.release")
+
   annotationProcessor("io.ebean:querybean-generator:latest.release")
 
-  implementation("io.ebean:ebean:latest.release")
-  implementation libs.hikariCP
+  api("io.ebean:ebean:latest.release")
+  api(libs.hikariCP)
+	implementation(libs.bundles.json)
+	implementation 'jakarta.activation:jakarta.activation-api:2.+'
 
   compileOnly libs.micrometer.core
 
@@ -42,17 +45,35 @@ dependencies {
 
   testImplementation(platform libs.junit.bom)
   testImplementation libs.bundles.junit
+	testImplementation("io.ebean:ebean-test:latest.release")
+
 
   testImplementation libs.h2
   testImplementation("io.ebean:ebean-querybean:latest.release")
 
-  testImplementation("io.ebean:ebean-test:latest.release")
+	testImplementation("io.ebean:ebean-platform-h2:latest.release")
+	testImplementation("io.ebean:ebean-platform-mysql:latest.release")
+	testImplementation("io.ebean:ebean-platform-postgres:latest.release")
+	testImplementation("io.ebean:ebean-platform-sqlite:latest.release")
+	testImplementation("io.ebean:ebean-platform-sqlserver:latest.release")
 
   testImplementation libs.bundles.logback
 }
 // https://tomgregory.com/how-to-exclude-gradle-dependencies/
 configurations.configureEach { // .implementation ?
   exclude group: 'io.ebean', module: 'ebean-datasource'
+
+	exclude group: 'io.ebean', module: 'ebean-joda-time'
+
+	exclude group: 'io.ebean', module: 'ebean-platform-all'
+	exclude group: 'io.ebean', module: 'ebean-platform-sqlanywhere'
+	exclude group: 'io.ebean', module: 'ebean-platform-oracle'
+	exclude group: 'io.ebean', module: 'ebean-platform-nuodb'
+	exclude group: 'io.ebean', module: 'ebean-platform-mariadb'
+	exclude group: 'io.ebean', module: 'ebean-platform-hsqldb'
+	exclude group: 'io.ebean', module: 'ebean-platform-hana'
+	exclude group: 'io.ebean', module: 'ebean-platform-db2'
+	exclude group: 'io.ebean', module: 'ebean-platform-clickhouse'
 }
 
 ebean {

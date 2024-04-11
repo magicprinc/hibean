@@ -8,6 +8,8 @@ dependencyResolutionManagement {
     libs {
       version('ebeanVersion', "latest.release")
       version("slf4jVersion", "1.7.+")
+			version("jacksonVersion", "2.16.+!!")
+
 
       library("hikariCP", "com.zaxxer", "HikariCP").version("latest.release")
       library("micrometer-core", "io.micrometer", "micrometer-core").version("latest.release")
@@ -26,9 +28,19 @@ dependencyResolutionManagement {
       library("jul-to-slf4j",  "org.slf4j","jul-to-slf4j").versionRef("slf4jVersion")
       library("logback-classic",  "ch.qos.logback","logback-classic").version("1.2.+")
 
+
+			library("json-jackson-core", "com.fasterxml.jackson.core", "jackson-core").versionRef("jacksonVersion")
+			library("json-jackson-databind", "com.fasterxml.jackson.core", "jackson-databind").versionRef("jacksonVersion")
+			library("json-jackson-annotations", "com.fasterxml.jackson.core", "jackson-annotations").versionRef("jacksonVersion")
+			library("json-jackson-datatype-jsr310", "com.fasterxml.jackson.datatype", "jackson-datatype-jsr310").versionRef("jacksonVersion")
+			library("json-jackson-datatype-jdk8", "com.fasterxml.jackson.datatype", "jackson-datatype-jdk8").versionRef("jacksonVersion")
+			library("json-jackson-module-param-name", "com.fasterxml.jackson.module", "jackson-module-parameter-names").versionRef("jacksonVersion")
+
       //*** libs.bundles ***
       bundle("junit", ["junit-jupiter", "junit-vintage-engine", "mockito"])
       bundle("logback", ["slf4j-api", "jcl-over-slf4j","log4j-over-slf4j","jul-to-slf4j", "logback-classic"])
+			bundle("json", ["json-jackson-core", "json-jackson-databind", "json-jackson-annotations", "json-jackson-datatype-jsr310", "json-jackson-datatype-jdk8", "json-jackson-module-param-name"])
+
 
       //*** libs.plugins ***
       plugin("lombok", "io.freefair.lombok").version("latest.release") //old: id 'io.franzbecker.gradle-lombok' version 'latest.release'
