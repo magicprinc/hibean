@@ -18,7 +18,8 @@ import static org.junit.Assert.assertNotNull;
  */
 public class CustomerTest {
 
-  @Test public void saveAndFind() {
+  @Test
+  public void saveAndFind() {
     Customer customer = new Customer("Hello Rob");
     customer.setStartDate(LocalDate.now());
     customer.setComments("What is this good for?");

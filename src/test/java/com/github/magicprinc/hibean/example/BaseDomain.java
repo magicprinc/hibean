@@ -1,15 +1,15 @@
 package com.github.magicprinc.hibean.example;
 
 import io.ebean.Model;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Version;
 
-import javax.persistence.Id;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.Version;
 
 @MappedSuperclass
 public abstract class BaseDomain extends Model {
 
-	@Id	Long id;
+	@Id Long id;
 	@Version Long version;
 
 	public Long getId () { return id; }

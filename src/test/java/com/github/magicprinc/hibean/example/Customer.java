@@ -1,9 +1,9 @@
 package com.github.magicprinc.hibean.example;
 
 import io.ebean.annotation.NotNull;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Lob;
 
-import javax.persistence.Entity;
-import javax.persistence.Lob;
 import java.time.LocalDate;
 
 @Entity

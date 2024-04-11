@@ -443,7 +443,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     return isOnline();
   }
 
-  @Override public void online () throws SQLException {
+  @Override public void online () {
     ds.getHikariPoolMXBean().resumePool();
   }
 

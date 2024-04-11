@@ -102,10 +102,6 @@ java {
   withSourcesJar()
   // withJavadocJar()
 }
-javadoc {
-  options.encoding = 'UTF-8'
-  options.addBooleanOption('html5', true)
-}
 
 tasks.withType(AbstractArchiveTask).configureEach {
   preserveFileTimestamps = false
