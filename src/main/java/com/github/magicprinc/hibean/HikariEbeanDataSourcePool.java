@@ -551,4 +551,9 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
   @Override public boolean isWrapperFor (Class<?> iface) throws SQLException {
     return ds.isWrapperFor(iface);
   }
+
+	@Override
+	public String toString () {
+		return "HikariEbeanDataSourcePool:"+ds;
+	}
 }
