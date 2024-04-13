@@ -21,6 +21,13 @@ interface SmartConfig {
 
 	String getProperty (String name);
 
+	default String getProperty (String name, String defaultValue) {
+		var value = getProperty(name);
+		if (value != null) {
+			return value;
+		}
+		return defaultValue;
+	}
 
 	static SmartConfig of (@NonNull Properties ebeanConfig) {
 		try {

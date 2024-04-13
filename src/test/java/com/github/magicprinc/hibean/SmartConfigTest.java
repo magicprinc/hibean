@@ -26,6 +26,8 @@ class SmartConfigTest {
 		assertTrue(Objects.requireNonNull(cfg.getProperty("java.version")).length() > 3);
 		assertFalse(Objects.requireNonNull(cfg.getProperty(System.getenv().keySet().iterator().next())).isEmpty());
 		assertTrue(cfg.toString().startsWith("SmartConfigSysEnv:{"));
+
+		assertEquals(" Zzz ", cfg.getProperty(" ---Xzzz."," Zzz "));
 	}
 
 	@Test
