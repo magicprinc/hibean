@@ -31,6 +31,10 @@ public class Smmo extends Model implements FinderMixin<Smmo> {
 
 	public static final Finder<Long,Smmo> FIND = new Finder<>(Smmo.class);
 
+	public Smmo (String dbName) {
+		super(dbName);
+	}
+
 	@Id
 	@Column(name = "smmo_id")
 	private Long smmoId;

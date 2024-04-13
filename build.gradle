@@ -42,7 +42,9 @@ dependencies {
 
   compileOnly libs.micrometer.core
 
-  //*** TEST TEST TEST
+
+  //*** TEST TEST TEST ***
+
 	testAnnotationProcessor("io.ebean:querybean-generator:latest.release") // vs: annotationProcessor
 	testImplementation(libs.bundles.annotations)
 
@@ -59,6 +61,8 @@ dependencies {
 	testImplementation("io.ebean:ebean-platform-postgres:latest.release")
 	testImplementation("io.ebean:ebean-platform-sqlite:latest.release")
 	testImplementation("io.ebean:ebean-platform-sqlserver:latest.release")
+
+	testImplementation('com.microsoft.sqlserver:mssql-jdbc:12.6.1.jre11')
 
   testImplementation libs.bundles.logback
 }
