@@ -68,6 +68,8 @@ dependencies {
 
   testImplementation libs.bundles.logback
 	testRuntimeOnly("org.eclipse.microprofile.config:microprofile-config-api:latest.release")
+
+	// testImplementation 'io.smallrye.config:smallrye-config:latest.release'
 }
 // https://tomgregory.com/how-to-exclude-gradle-dependencies/
 configurations.configureEach { // .implementation ?
