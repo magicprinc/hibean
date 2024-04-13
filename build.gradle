@@ -111,6 +111,8 @@ sonarLint {
   isGeneratedCodeIgnored = true
   ignoreFailures = true
 }
+lombok { version = "latest.release" }
+
 // https://docs.gradle.org/current/userguide/publishing_maven.html
 publishing {
   publications {
