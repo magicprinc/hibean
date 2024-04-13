@@ -104,27 +104,9 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     }
     HikariConfig hc = new HikariConfig();
     hc.setPoolName(hikariPoolName);// helps to know poolName during init phase
-    String propertyNames = normValue(trim(dst.getProperty("propertyNames")))
-        .replace("-","").replace("then","").replace("only","").replace("than","");
-
-    if ("hikari".equalsIgnoreCase(propertyNames)){// hikari only
-      setTargetFromProperties(hc, dst);
-      ds = createDataSource(hc, hikariPoolName);// only hikari property names are used
-
-    } else if ("hikariebean".equalsIgnoreCase(propertyNames)){// hikari-then-ebean
-      setTargetFromProperties(hc, dst);//1. hikari
-      mergeFromDataSourceConfig(hc, config);//2. ebean (overrides)
-      ds = createDataSource(hc, hikariPoolName);
-
-    } else if ("ebean".equalsIgnoreCase(propertyNames)){// ebean only
-      mergeFromDataSourceConfig(hc, config);
-      ds = createDataSource(hc, hikariPoolName);
-
-    } else {// everything else: ebean-hikari (default)
-      mergeFromDataSourceConfig(hc, config);//1.ebean
-      setTargetFromProperties(hc, dst);//2.hikari (overrides)
-      ds = createDataSource(hc, hikariPoolName);
-    }
+    mergeFromDataSourceConfig(hc, config);//1.ebean
+    setTargetFromProperties(hc, dst);//2.hikari (overrides)
+    ds = createDataSource(hc, hikariPoolName);
   }//new
 
   protected HikariDataSource createDataSource (HikariConfig hc, String poolName){
@@ -202,8 +184,8 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     });
   }
   /** TO DO keep in sync with {@link PropertyElf#setProperty} */
-  static boolean setProperty(final Object target, final String propName, final Object propValue, final List<Method> methods) {
-    final var logger = LoggerFactory.getLogger("com.zaxxer.hikari.util.PropertyElf.HikariEbeanDataSourcePool");
+  static boolean setProperty (Object target, String propName, Object propValue, List<Method> methods) {
+    final var logger = LoggerFactory.getLogger(HikariEbeanDataSourcePool.class);
 
     // use the english locale to avoid the infamous turkish locale bug
     var methodName = "set" + propName.substring(0, 1).toUpperCase(Locale.ENGLISH) + propName.substring(1);
@@ -220,29 +202,28 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     }
 
     try {
-      var paramClass = writeMethod.getParameterTypes()[0];
-      if (paramClass == int.class) {
-        writeMethod.invoke(target, Integer.parseInt(propValue.toString()));
-      }
-      else if (paramClass == long.class) {
-        writeMethod.invoke(target, Long.parseLong(propValue.toString()));
-      }
-      else if (paramClass == short.class) {
-        writeMethod.invoke(target, Short.parseShort(propValue.toString()));
-      }
-      else if (paramClass == boolean.class || paramClass == Boolean.class) {
-        writeMethod.invoke(target, Boolean.parseBoolean(propValue.toString()));
-      }
-      else if (paramClass == String.class) {
+      Class<?> paramClass = writeMethod.getParameterTypes()[0];
+      if (paramClass == int.class || paramClass == Integer.class){
+        writeMethod.invoke(target, Integer.decode(propValue.toString().trim()));
+
+      } else if (paramClass == long.class || paramClass == Long.class){
+        writeMethod.invoke(target, Long.decode(propValue.toString().trim()));
+
+      } else if (paramClass == short.class || paramClass == Short.class){
+        writeMethod.invoke(target, Short.decode(propValue.toString().trim()));
+
+      } else if (paramClass == boolean.class || paramClass == Boolean.class){
+        writeMethod.invoke(target, Boolean.parseBoolean(propValue.toString().trim()));
+
+      } else if (paramClass == String.class || paramClass == CharSequence.class){
         writeMethod.invoke(target, propValue.toString());
-      }
-      else {
+
+      } else {
         try {
           logger.debug("Try to create a new instance of \"{}\"", propValue);
           writeMethod.invoke(target, Class.forName(propValue.toString()).getDeclaredConstructor().newInstance());
-        }
-        catch (InstantiationException | ClassNotFoundException e) {
-          logger.debug("Class \"{}\" not found or could not instantiate it (Default constructor)", propValue);
+        } catch (InstantiationException | ClassNotFoundException | NoClassDefFoundError e){
+          logger.debug("Class \"{}\" not found or could not instantiate it (Default constructor) ‹ {}", propValue, e.toString());
           writeMethod.invoke(target, propValue);
         }
       }
