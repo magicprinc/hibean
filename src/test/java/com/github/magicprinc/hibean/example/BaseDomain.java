@@ -4,16 +4,20 @@ import io.ebean.Model;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.Version;
-
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @MappedSuperclass
+@Data
+@EqualsAndHashCode(doNotUseGetters = true, callSuper = false)
+@ToString(doNotUseGetters = true, callSuper = false)
+@NoArgsConstructor  @AllArgsConstructor
 public abstract class BaseDomain extends Model {
 
 	@Id Long id;
 	@Version Long version;
 
-	public Long getId () { return id; }
-	public Long getVersion () {	return version; }
-	public void setId (Long id) { this.id = id; }
-	public void setVersion (Long version) { this.version = version; }
 }

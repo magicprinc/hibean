@@ -14,7 +14,8 @@ import io.ebean.datasource.DataSourceConfig;
 import io.ebean.datasource.DataSourcePool;
 import io.ebean.datasource.PoolStatus;
 import io.micrometer.core.instrument.Metrics;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.sql.DataSource;
 import java.io.InputStream;
@@ -54,11 +55,10 @@ import static io.ebean.util.CamelCaseHelper.toCamelFromUnderscore;
 
  @author a.fink
  */
+@Slf4j  @RequiredArgsConstructor
 public class HikariEbeanDataSourcePool implements DataSourcePool {
 
   final HikariDataSource ds;
-
-  public HikariEbeanDataSourcePool (HikariDataSource ds){ this.ds = ds; }//new
 
   public HikariEbeanDataSourcePool (String callerPoolName, DataSourceConfig config) {
     String tmpTrimPoolName = trim(callerPoolName);
@@ -185,8 +185,6 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
   }
   /** TO DO keep in sync with {@link PropertyElf#setProperty} */
   static boolean setProperty (Object target, String propName, Object propValue, List<Method> methods) {
-    final var logger = LoggerFactory.getLogger(HikariEbeanDataSourcePool.class);
-
     // use the english locale to avoid the infamous turkish locale bug
     var methodName = "set" + propName.substring(0, 1).toUpperCase(Locale.ENGLISH) + propName.substring(1);
     var writeMethod = methods.stream().filter(m -> m.getName().equals(methodName) && m.getParameterCount() == 1).findFirst().orElse(null);
@@ -197,7 +195,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     }
 
     if (writeMethod == null) {
-      logger.warn("Property {} does not exist on target {}", propName, target.getClass());// ~ ebean property
+      log.warn("Property {} does not exist on target {}", propName, target.getClass());// ~ ebean property
       return false;
     }
 
@@ -220,16 +218,16 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
 
       } else {
         try {
-          logger.debug("Try to create a new instance of \"{}\"", propValue);
+          log.debug("Try to create a new instance of \"{}\"", propValue);
           writeMethod.invoke(target, Class.forName(propValue.toString()).getDeclaredConstructor().newInstance());
         } catch (InstantiationException | ClassNotFoundException | NoClassDefFoundError e){
-          logger.debug("Class \"{}\" not found or could not instantiate it (Default constructor) ‹ {}", propValue, e.toString());
+          log.debug("Class \"{}\" not found or could not instantiate it (Default constructor) ‹ {}", propValue, e.toString());
           writeMethod.invoke(target, propValue);
         }
       }
       return true;// success
     } catch (Throwable e){
-      logger.error("Failed to set property {} on target {}", propName, target.getClass(), e);
+      log.error("Failed to set property {} on target {}", propName, target.getClass(), e);
       return false;
     }
   }

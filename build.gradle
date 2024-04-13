@@ -3,11 +3,13 @@ plugins {
   id "idea"
   id 'maven-publish'
 
+	alias(libs.plugins.lombok)
   alias(libs.plugins.ebean)
 
   alias(libs.plugins.sonarLint)
   alias(libs.plugins.errorProne)
 }
+println "[INFO] ${project.group}:${project.name}:$version  ⇒  ${tasks.jar.archiveFileName.get()} # JVM: ${System.getProperty("java.version")}  Gradle: ${gradle.gradleVersion}"
 
 repositories {
   mavenLocal()
@@ -32,8 +34,6 @@ tasks.withType(JavaCompile).configureEach {
 dependencies {
   errorprone("com.google.errorprone:error_prone_core:latest.release")
 
-  annotationProcessor("io.ebean:querybean-generator:latest.release")
-
   api("io.ebean:ebean:latest.release")
   api(libs.hikariCP)
 	implementation(libs.bundles.json)
@@ -42,6 +42,7 @@ dependencies {
   compileOnly libs.micrometer.core
 
   //*** TEST TEST TEST
+	testAnnotationProcessor("io.ebean:querybean-generator:latest.release") // vs: annotationProcessor
 
   testImplementation(platform libs.junit.bom)
   testImplementation libs.bundles.junit
@@ -74,6 +75,13 @@ configurations.configureEach { // .implementation ?
 	exclude group: 'io.ebean', module: 'ebean-platform-hana'
 	exclude group: 'io.ebean', module: 'ebean-platform-db2'
 	exclude group: 'io.ebean', module: 'ebean-platform-clickhouse'
+
+	exclude group: "commons-logging", module: "commons-logging" // spring?
+	exclude group: "org.apache.logging.log4j", module: "log4j-api"
+	exclude group: "org.apache.logging.log4j", module: "log4j-to-slf4j"
+	exclude group: "org.jboss.slf4j", module:  "slf4j-jboss-logmanager"
+
+	exclude group: "com.mchange", module: "c3p0"
 }
 
 ebean {
