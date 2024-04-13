@@ -1,5 +1,6 @@
 package com.github.magicprinc.hibean.example;
 
+import com.github.magicprinc.hibean.FinderMixin;
 import io.ebean.annotation.NotNull;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Lob;
@@ -7,7 +8,7 @@ import jakarta.persistence.Lob;
 import java.time.LocalDate;
 
 @Entity
-public class Customer extends BaseDomain {
+public class Customer extends BaseDomain implements FinderMixin<Customer> {
 
   @NotNull String name;
   LocalDate startDate;
