@@ -21,8 +21,8 @@ public interface FinderMixin<APPLIED_TO_CLAS> {
 
 	@SuppressWarnings({"InstanceofThis", "InstanceofIncompatibleInterface"})
 	default <ID> Finder<ID,APPLIED_TO_CLAS> finder () {
-		String databaseName = this instanceof Model
-				? ((Model) this).db().name()
+		String databaseName = this instanceof Model m
+				? m.db().name()
 				: null;
 
 		return finder(databaseName);
