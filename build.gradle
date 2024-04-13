@@ -33,6 +33,7 @@ tasks.withType(JavaCompile).configureEach {
 
 dependencies {
   errorprone("com.google.errorprone:error_prone_core:latest.release")
+	compileOnly(libs.bundles.annotations)
 
   api("io.ebean:ebean:latest.release")
   api(libs.hikariCP)
@@ -43,6 +44,7 @@ dependencies {
 
   //*** TEST TEST TEST
 	testAnnotationProcessor("io.ebean:querybean-generator:latest.release") // vs: annotationProcessor
+	testImplementation(libs.bundles.annotations)
 
   testImplementation(platform libs.junit.bom)
   testImplementation libs.bundles.junit

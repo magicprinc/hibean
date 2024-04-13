@@ -9,8 +9,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.ToString;
 
+import javax.annotation.ParametersAreNullableByDefault;
 import java.time.LocalDate;
 
 @Entity
@@ -18,13 +20,14 @@ import java.time.LocalDate;
 @EqualsAndHashCode(doNotUseGetters = true, callSuper = true)
 @ToString(doNotUseGetters = true, callSuper = true)
 @NoArgsConstructor  @AllArgsConstructor  @Builder(toBuilder = true)
+@ParametersAreNullableByDefault
 public class Customer extends BaseDomain implements FinderMixin<Customer> {
 
   @NotNull String name;
   LocalDate startDate;
   @Lob String comments;
 
-  public Customer (String name) {
+  public Customer (@NonNull String name) {
     this.name = name;
   }
 }
