@@ -1,7 +1,12 @@
 package com.github.magicprinc.hibean;
 
+import com.github.magicprinc.hibean.example.Smmo;
+import io.ebean.DB;
 import io.ebean.Model;
 import org.apiguardian.api.API;
+import org.jeasy.random.EasyRandom;
+import org.jeasy.random.EasyRandomParameters;
+import org.jeasy.random.FieldPredicates;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,5 +39,22 @@ public class FinderMixinTest {
 		assertEquals(t, getClass().getCanonicalName());
 		// public class com.github.magicprinc.hibean.FinderMixinTest
 		assertEquals("public class "+ t, getClass().toGenericString());
+	}
+
+	@Test
+	void _smmo () {
+		EasyRandomParameters parameters = new EasyRandomParameters()
+			.bypassSetters(true)
+			.excludeField(FieldPredicates.named("_ebean_.*"))
+			.excludeField(FieldPredicates.named("smmoId"))// autoinc column × smmo.setSmmoId(null)
+			.excludeField(FieldPredicates.named("_\\$.*"));
+		var r = new EasyRandom(parameters);// Instancio
+
+		for (int i=0; i<100; i++){
+			var smmo = r.nextObject(Smmo.class);
+			assertEquals("db", smmo.db().name());
+			DB.save(smmo);
+		}
+		assertEquals(100, FinderMixin.finder(Smmo.class).query().findCount());
 	}
 }
