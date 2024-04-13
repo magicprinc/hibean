@@ -40,6 +40,8 @@ dependencies {
 	implementation(libs.bundles.json)
 	implementation 'jakarta.activation:jakarta.activation-api:2.+'
 
+	compileOnly("org.eclipse.microprofile.config:microprofile-config-api:latest.release")
+
   compileOnly libs.micrometer.core
 
 
@@ -65,6 +67,7 @@ dependencies {
 	testImplementation('com.microsoft.sqlserver:mssql-jdbc:12.6.1.jre11')
 
   testImplementation libs.bundles.logback
+	testRuntimeOnly("org.eclipse.microprofile.config:microprofile-config-api:latest.release")
 }
 // https://tomgregory.com/how-to-exclude-gradle-dependencies/
 configurations.configureEach { // .implementation ?
