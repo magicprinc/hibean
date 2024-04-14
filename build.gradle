@@ -46,8 +46,10 @@ dependencies {
 
   compileOnly libs.micrometerCore
 
+	// compileOnly("io.ebean:ebean-agent:latest.release") // fix old ebean-agent bug → upgrade IDEA plugin,
 
-  //*** TEST TEST TEST ***
+
+	//*** TEST TEST TEST ***
 
 	testAnnotationProcessor("io.ebean:querybean-generator:latest.release") // vs: annotationProcessor
 	testImplementation(libs.bundles.coreAnnotation)
@@ -65,15 +67,13 @@ dependencies {
 	testImplementation("io.ebean:ebean-platform-sqlite:latest.release")
 	testImplementation("io.ebean:ebean-platform-sqlserver:latest.release")
 
-	testImplementation libs.jdbc.h2
-	testImplementation(libs.jdbc.mssql)
+	testRuntimeOnly(libs.jdbc.h2, libs.jdbc.mssql)
 
-	//testRuntimeOnly("org.ow2.asm:asm:9.+")
 	testRuntimeOnly("org.eclipse.microprofile.config:microprofile-config-api:latest.release")
 	// testImplementation 'io.smallrye.config:smallrye-config:latest.release'
 }
-// https://tomgregory.com/how-to-exclude-gradle-dependencies/
-configurations.configureEach { // .implementation ?
+
+configurations.configureEach { // .implementation ? https://tomgregory.com/how-to-exclude-gradle-dependencies/
   exclude group: 'io.ebean', module: 'ebean-datasource'
 
 	exclude group: 'io.ebean', module: 'ebean-joda-time'
@@ -124,11 +124,9 @@ sonarLint {
 }
 lombok { version = "latest.release" }
 
-// https://docs.gradle.org/current/userguide/publishing_maven.html
-publishing {
+publishing { // https://docs.gradle.org/current/userguide/publishing_maven.html
   publications {
-    maven(MavenPublication) {
-      //groupId in gradle.properties;  artifactId == folder name
+    maven(MavenPublication) { // groupId in gradle.properties;  artifactId == folder name
       from components.java
 			suppressPomMetadataWarningsFor('runtimeElements')
     }
@@ -139,7 +137,7 @@ java {
   // withJavadocJar()
 }
 
-idea { module { downloadJavadoc = true;	downloadSources = true } }
+idea { module { downloadJavadoc = true;	 downloadSources = true } }
 
 jar {
 	from generatePomFileForMavenPublication {
