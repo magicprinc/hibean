@@ -49,10 +49,22 @@ import static io.ebean.util.CamelCaseHelper.toCamelFromUnderscore;
 
  <a href="https://github.com/brettwooldridge/HikariCP#gear-configuration-knobs-baby">Hikari settings</a>
 
+ <a href="https://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/autoconfigure/jdbc/DataSourceProperties.html">Spring Boot</a>
+ <pre>{@code
+	spring.datasource.type=com.zaxxer.hikari.HikariDataSource
+	spring.datasource.url=jdbc:mysql://localhost:3306/myDb
+	spring.datasource.username=myUsername
+	spring.datasource.password=myPassword
+	spring.datasource.hikari.maximum-pool-size=10
+	spring.datasource.hikari.connection-timeout=30000
+  spring.datasource.hikari.data-source-properties.cachePrepStmts=true
+ }</pre>
+
  @see io.ebean.datasource.pool.ConnectionPool#ConnectionPool(String, DataSourceConfig)
  @see DataSourceConfig
  @see DataSourceConfig#loadSettings(io.ebean.datasource.ConfigPropertiesHelper)
  @see DatabaseConfig#loadFromProperties()
+ @see io.ebean.datasource.DataSourceBuilder.Settings
 
  @author a.fink
  */
@@ -70,7 +82,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
 
 		var cfg = SmartConfig.of(Config.asProperties());// System.properties overwrite file.properties
 		Map<String,String> aliasMap = alias();
-    String[] prefixes = collectPrefixes(cfg);
+    val prefixes = collectPrefixes(cfg);
 
     Properties dst = new Properties(127);
     {//1. search settings with our db_name
@@ -153,12 +165,18 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
      	 : trim(defaultServerName);
   }
 
-  /** sub-prefix for real-vendor-jdbc-driver settings (e.g. MSSQL statementPoolingCacheSize)*/
-  private static final String[] VENDOR_SETTINGS_PREFIX = {"datasource.", "driver."};
+  /**
+	 sub-prefix for real-vendor-jdbc-driver settings (e.g. MSSQL statementPoolingCacheSize)
+	 @see HikariConfig#addDataSourceProperty(String, Object)
+	 */
+  private static final String[] VENDOR_SETTINGS_PREFIX = { "datasourceproperties.", // for dataSourceProperties
+		"data-source-properties.", // spring boot official
+		"datasource." // Hikari way to pass driver-specific properties, see https://github.com/brettwooldridge/HikariCP/wiki/MySQL-Configuration + PropertyElf#setTargetFromProperties
+	};
 
   /** @see PropertyElf#setTargetFromProperties*/
   static void setTargetFromProperties (HikariConfig hc, Properties p){
-    p.remove("appendFrom");  p.remove("copyFrom");  p.remove("confFile");  p.remove("propertyNames");
+    p.remove("appendFrom");  p.remove("copyFrom");  p.remove("confFile");
 
     List<Method> methods = Arrays.asList(hc.getClass().getMethods());
     p.forEach((keyObj, value) -> {
@@ -173,8 +191,9 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
       }//else: HikariConfig.setter
       String javaPropertyName = toCamelFromUnderscore(key.replace('-', '_'));// spring.boot-key_fmt
       boolean success = setProperty(hc, javaPropertyName, value, methods);
-      if (!success && !javaPropertyName.equals(key))// fallback to property_name as-is
-        setProperty(hc, key, value, methods);
+      if (!success && !javaPropertyName.equals(key)){// fallback to property_name as-is
+				setProperty(hc, key, value, methods);
+			}
     });
   }
   /** TO DO keep in sync with {@link PropertyElf#setProperty} */
@@ -336,8 +355,8 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
   private static final Pattern SPACE_AND_UNDERSCORE = Pattern.compile("[\\s_]", Pattern.CASE_INSENSITIVE|Pattern.UNICODE_CHARACTER_CLASS);
 
   /** Prefixes to filter our (hikari) property names. Default: db. → datasource.db → spring.datasource.db.hikari. */
-  private String[] collectPrefixes (SmartConfig cfg){
-    String[] p = new String[20];
+  private List<String> collectPrefixes (SmartConfig cfg){
+    String[] p = new String[16];
     p[1] = "%db%";
     p[3] = "datasource.%db%";
     p[5] = "spring.datasource.%db%hikari.";
@@ -346,11 +365,14 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     p[11] = "quarkus.datasource.%db%";
 
     for (int i=0; i<p.length; i++){
-      String key = "ebean.hikari.prefix."+i;
+      String key = "ebean.hikari.prefix."+ Integer.toHexString(i);// .0..f
       p[i] = trim(cfg.getProperty(key, p[i])).toLowerCase(Locale.ENGLISH);
     }
-    Arrays.sort(p, Comparator.comparing(String::length).reversed());
-    return p;
+		return Arrays.stream(p)
+			.map(HikariEbeanDataSourcePool::trim)
+				.filter(pre -> pre.length() > 1)
+				.sorted(Comparator.comparing(String::length).reversed())
+				.toList();
   }
 
   /**
@@ -363,11 +385,11 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
    *
    * }</pre>
    */
-  void filter (Map<String,String> aliasMap, SmartConfig src, Properties dst, String dbName, String[] prefixTemplates){
-    dbName = trim(dbName).toLowerCase(Locale.ENGLISH);
-    final String db = dbName + (dbName.isEmpty() || dbName.endsWith(".") ? "" : ".");
+  void filter (Map<String,String> aliasMap, SmartConfig src, Properties dst, String dbName, List<String> prefixTemplates){
+    dbName = trim(dbName).toLowerCase(Locale.ENGLISH);// "", "db", "myCoolBase"
+    val db = dbName + (dbName.isEmpty() || dbName.endsWith(".") ? "" : ".");// "", "db.", "myCoolBase."
 
-    var prefixes = Arrays.stream(prefixTemplates)
+    val prefixes = prefixTemplates.stream()
         .map(pre -> trim(pre).toLowerCase(Locale.ENGLISH).replace("%db%", db))
         .filter(pre -> pre.length() > 1)
         .sorted(Comparator.comparing(String::length).reversed())

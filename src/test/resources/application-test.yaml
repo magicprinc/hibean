@@ -22,7 +22,7 @@ datasource:
     appendFrom: db, extra
     url: jdbc:h2:mem:testMix
     failOnStart: false
-    drivEr:
+    data-source-properties:
       NETWORK_TIMEOUT: 51_000
     DataSourcE:
       NO_UPGRADE: true
