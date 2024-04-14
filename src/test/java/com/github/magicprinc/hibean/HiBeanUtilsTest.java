@@ -25,9 +25,9 @@ class HiBeanUtilsTest {
 		assertSame(db, DB.byName("fooBarZoo"));
 
 		var mo = new Smmo(db.name());
-		mo.setSrcAddr("from");
-		mo.setDstAddr("1917393791");
-		mo.save();
+		mo.srcAddr("from")
+			.dstAddr("1917393791")
+			.save();
 
 		var mo2 = mo.finder().query().where().eq("SrcAddr", "from").and().eq("dstAddr", "1917393791").findOne();
 		assertNotSame(mo, mo2);

@@ -58,8 +58,8 @@ public class FinderMixinTest {
 		assertEquals(100, FinderMixin.finder(Smmo.class).query().findCount());
 
 		Smmo.FIND.all().forEach(mo->{
-			assertTrue(mo.getPid() >= 0 && mo.getPid() < 255);
-			if (mo.getSmmoId() % 20 == 1){
+			assertTrue(mo.pid() >= 0 && mo.pid() < 255);
+			if (mo.smmoId() % 20 == 1){
 				System.out.println(mo);// some examples
 			}
 		});

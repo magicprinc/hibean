@@ -15,6 +15,10 @@ import static org.junit.Assert.assertNotNull;
 
 /**
  https://github.com/ebean-orm-examples/example-springboot
+
+ @see Customer
+ @see BaseDomain
+ @see io.ebean.Model
  @see DataSourceConfig#loadSettings(io.ebean.datasource.ConfigPropertiesHelper)
  */
 public class CustomerTest {
@@ -22,28 +26,28 @@ public class CustomerTest {
   @Test
   public void saveAndFind() {
     Customer customer = new Customer("Hello Rob");
-    customer.setStartDate(LocalDate.now());
-    customer.setComments("What is this good for?");
+    customer.startDate(LocalDate.now())
+			.comments("What is this good for?");
 
     customer.save();
 
-    assertNotNull(customer.getId());
+    assertNotNull(customer.id());
 
-    Customer found = DB.find(Customer.class).where().idEq(customer.getId()).findOne();
+    Customer found = DB.find(Customer.class).where().idEq(customer.id()).findOne();
 
     assertNotNull(found);
-    assertEquals(found.getId(), customer.getId());
-    assertEquals(found.getName(), customer.getName());
+    assertEquals(found.id(), customer.id());
+    assertEquals(found.name(), customer.name());
 
-		Customer f1 = found.finder().query().where().idEq(customer.getId()).findOne();
+		Customer f1 = found.finder().query().where().idEq(customer.id()).findOne();
 		assertNotNull(f1);
-		assertEquals(customer.getId(), f1.getId());
-		assertEquals(customer.getName(), f1.getName());
+		assertEquals(customer.id(), f1.id());
+		assertEquals(customer.name(), f1.name());
 
-		Customer f2 = FinderMixin.finder(Customer.class).query().where().idEq(customer.getId()).findOne();
+		Customer f2 = FinderMixin.finder(Customer.class).query().where().idEq(customer.id()).findOne();
 		assertNotNull(f2);
-		assertEquals(customer.getId(), f2.getId());
-		assertEquals(customer.getName(), f2.getName());
+		assertEquals(customer.id(), f2.id());
+		assertEquals(customer.name(), f2.name());
 
 		System.out.println(FinderMixin.FINDER_CACHE);
 		assertEquals(1, FinderMixin.FINDER_CACHE.size());
