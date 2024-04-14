@@ -6,8 +6,8 @@ plugins {
 	alias(libs.plugins.lombok)
   alias(libs.plugins.ebean)
 
-  alias(libs.plugins.sonarLint)
-  alias(libs.plugins.errorProne)
+  alias(libs.plugins.sonarlint)
+  alias(libs.plugins.errorprone)
 }
 println "[INFO] ${project.group}:${project.name}:$version  ⇒  ${tasks.jar.archiveFileName.get()} # JVM: ${System.getProperty("java.version")}  Gradle: ${gradle.gradleVersion}"
 
