@@ -33,29 +33,30 @@ tasks.withType(JavaCompile).configureEach {
 
 dependencies {
   errorprone("com.google.errorprone:error_prone_core:latest.release")
-	compileOnly(libs.bundles.annotations)
+	compileOnly(libs.bundles.coreAnnotation)
 
   api("io.ebean:ebean:latest.release")
   api(libs.hikariCP)
-	implementation(libs.bundles.json)
-	implementation 'jakarta.activation:jakarta.activation-api:2.+'
+	implementation(libs.bundles.jackson)
+	implementation(libs.jakarta.activationApi)
+	implementation(libs.jakarta.validationApi)
+	implementation(libs.slf4jApi)
 
 	compileOnly("org.eclipse.microprofile.config:microprofile-config-api:latest.release")
 
-  compileOnly libs.micrometer.core
+  compileOnly libs.micrometerCore
 
 
   //*** TEST TEST TEST ***
 
 	testAnnotationProcessor("io.ebean:querybean-generator:latest.release") // vs: annotationProcessor
-	testImplementation(libs.bundles.annotations)
+	testImplementation(libs.bundles.coreAnnotation)
 
-  testImplementation(platform libs.junit.bom)
   testImplementation libs.bundles.junit
+	testImplementation(libs.testEasyRandom, libs.testEasyRandomValidation)
 	testImplementation("io.ebean:ebean-test:latest.release")
 
 
-  testImplementation libs.h2
   testImplementation("io.ebean:ebean-querybean:latest.release")
 
 	testImplementation("io.ebean:ebean-platform-h2:latest.release")
@@ -64,11 +65,11 @@ dependencies {
 	testImplementation("io.ebean:ebean-platform-sqlite:latest.release")
 	testImplementation("io.ebean:ebean-platform-sqlserver:latest.release")
 
-	testImplementation('com.microsoft.sqlserver:mssql-jdbc:12.6.1.jre11')
+	testImplementation libs.jdbc.h2
+	testImplementation(libs.jdbc.mssql)
 
-  testImplementation libs.bundles.logback
+	//testRuntimeOnly("org.ow2.asm:asm:9.+")
 	testRuntimeOnly("org.eclipse.microprofile.config:microprofile-config-api:latest.release")
-
 	// testImplementation 'io.smallrye.config:smallrye-config:latest.release'
 }
 // https://tomgregory.com/how-to-exclude-gradle-dependencies/
@@ -97,6 +98,7 @@ configurations.configureEach { // .implementation ?
 
 ebean {
   debugLevel = 9 //0 - 9
+	// queryBeans = true
 }
 
 test {

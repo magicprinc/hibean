@@ -42,10 +42,13 @@ smallryeCommonAnnotation = { module = "io.smallrye.common:smallrye-common-annota
 javax-annotationApi   = { module = "javax.annotation:javax.annotation-api", version="1.+" }
 jakarta-annotationApi = { module = "jakarta.annotation:jakarta.annotation-api", version="2.+" }
 
-
 # https://www.baeldung.com/javax-validation
 javax-validationApi   = { module = "javax.validation:validation-api", version="2.+" }
 jakarta-validationApi = { module = "jakarta.validation:jakarta.validation-api", version="3.0.+" }
+
+#
+jakarta-activationApi = { module = 'jakarta.activation:jakarta.activation-api', version="2.+" }
+
 
 ########################################################################################################################
 
@@ -230,7 +233,7 @@ coreAnnotation = ["jsr305","errorprone","smallryeCommonAnnotation","javax-annota
 junit = [ # "hikariCP" boot обнаруживает его и требует jdbc url в конфиге
 		"junitJupiter","junitVintageEngine", "mockitoCore","mockitoJunitJupiter", "googleTruth","googleTruthJava8",
     "springTest","eclipseCollectionsTest","logback","jsonAssert","okHttp-mockWebServer","okio",
-		"testInstancio","testInstancioQuickCheck","springBootStarterTest","groovyCore","groovyTemplates",
+		#"testInstancio","testInstancioQuickCheck","springBootStarterTest","groovyCore","groovyTemplates",
 		"byteBuddy", "byteBuddyAgent"
 	]
 
