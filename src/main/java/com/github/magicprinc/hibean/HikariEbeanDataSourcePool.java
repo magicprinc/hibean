@@ -74,13 +74,13 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
 
   final HikariDataSource ds;
 
-  public HikariEbeanDataSourcePool (String callerPoolName, DataSourceConfig config) {
+  public HikariEbeanDataSourcePool (String callerPoolName, DataSourceConfig config, Properties configAsProperties) {
 		val defaultDatabaseName = determineDefaultServerName();// usually "db"
     val tmpTrimPoolName = trim(callerPoolName);
     val hikariPoolName = tmpTrimPoolName.isEmpty() || tmpTrimPoolName.equals(defaultDatabaseName)
 				? "ebean"
         : "ebean."+ tmpTrimPoolName;
-		val cfg = SmartConfig.of(Config.asProperties());// System.properties overwrite file.properties
+		val cfg = SmartConfig.of(configAsProperties);// System.properties overwrite file.properties
 		val databaseName = makeDatabaseNamePrefix(tmpTrimPoolName, defaultDatabaseName, cfg);
 		Map<String,String> aliasMap = alias();
     val prefixes = collectPrefixes(cfg);
@@ -133,7 +133,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
 							cfg.getProperty("ebean.hikari.defaultDb")));
 
 			if (db == null){
-				return defaultDatabaseName;// default prefix for default database (usually db)
+				return defaultDatabaseName +'.';// default prefix for default database (usually db)
 			} else {
 				db = trim(db);
 				return db.isEmpty() ? ""
@@ -360,7 +360,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     p[5] = "spring.datasource.%db%hikari.";
     p[7] = cfg.getProperty("ebean.hikari.prefix");
     p[9] = "spring.datasource.%db%";
-    p[11] = "quarkus.datasource.%db%";
+    // p[11] = "quarkus.datasource.%db%";
 
     for (int i=0; i<p.length; i++){
       String key = "ebean.hikari.prefix."+ Integer.toHexString(i);// .0..f
@@ -388,7 +388,8 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     val db = dbName + (dbName.isEmpty() || dbName.endsWith(".") ? "" : ".");// "", "db.", "mycoolbase.", "toosmart."
 
 		final String[] prefixes;
-		if ((db.isEmpty() || db.equals(defaultDatabaseName)) && !defaultDatabaseName.isEmpty()){// for default db we must generate both variants: spring.datasource.url and spring.datasource.db.url
+		// for default db we must generate both variants: spring.datasource.url and spring.datasource.db.url
+		if ((dbName.isEmpty() || dbName.equals(defaultDatabaseName) || dbName.equals(defaultDatabaseName+'.')) && !defaultDatabaseName.isEmpty()){
 			var set = new LinkedHashSet<String>(prefixTemplates.size() * 8 / 3 + 1);
 
 			prefixTemplates.stream()
@@ -397,7 +398,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
 				.forEach(set::add);
 
 			prefixTemplates.stream()
-				.map(pre->trim(pre).toLowerCase(Locale.ENGLISH).replace("%db%", defaultDatabaseName))
+				.map(pre->trim(pre).toLowerCase(Locale.ENGLISH).replace("%db%", defaultDatabaseName+'.'))
 				.filter(pre->pre.length() > 1)
 				.forEach(set::add);
 

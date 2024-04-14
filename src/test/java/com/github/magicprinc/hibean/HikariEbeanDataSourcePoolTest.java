@@ -5,6 +5,7 @@ import io.ebean.DB;
 import io.ebean.Database;
 import io.ebean.datasource.DataSourceConfig;
 import io.ebean.datasource.DataSourceFactory;
+import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
@@ -17,12 +18,17 @@ import java.util.Properties;
 
 import static com.github.magicprinc.hibean.HikariEbeanDataSourcePool.isNumeric;
 import static com.github.magicprinc.hibean.HikariEbeanDataSourcePool.normValue;
+import static com.github.magicprinc.hibean.HikariEbeanDataSourcePool.trim;
 import static java.util.stream.Collectors.joining;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ @see HikariEbeanDataSourcePool
+ @see com.zaxxer.hikari.HikariConfig
+ */
 class HikariEbeanDataSourcePoolTest {
-
-  @Test void numeric () {
+  @Test
+	void numeric () {
     assertFalse(isNumeric(""));
     assertFalse(isNumeric(" _"));
 
@@ -95,7 +101,7 @@ class HikariEbeanDataSourcePoolTest {
 
   @Test void testAnotherPrefix () {
     try {
-      System.setProperty("ebean.hikari.prefix", "spring.datasource.");
+      System.setProperty("ebean.hikari.prefix", "spring.datasource.testAnotherPrefix.");
 
       var db = DB.byName("test_spring");
       var pool = (HikariEbeanDataSourcePool) db.dataSource();
@@ -106,9 +112,9 @@ class HikariEbeanDataSourcePoolTest {
       assertEquals(54321, pool.ds.getMaxLifetime());
 
       System.setProperty("ebean.hikari.prefix.9", "");// disable spring
-      System.setProperty("ebean.hikari.prefix", "quarkus.datasource.");
+      System.setProperty("ebean.hikari.prefix", "quarkus.datasource.%db%");
       System.setProperty("ebean.hikari.default-Db", "");
-      var dataSourcePool = (HikariEbeanDataSourcePool) new HikariEbeanConnectionPoolFactory().createPool(null, new DataSourceConfig());
+      var dataSourcePool = (HikariEbeanDataSourcePool) new HikariEbeanConnectionPoolFactory().createPool("myQuarkusDS", new DataSourceConfig());
       assertEquals("jdbc:h2:mem:evenQuarkus", dataSourcePool.ds.getJdbcUrl());
       assertEquals("org.h2.Driver", dataSourcePool.ds.getDriverClassName());
       assertEquals("test", dataSourcePool.ds.getUsername());
@@ -117,21 +123,22 @@ class HikariEbeanDataSourcePoolTest {
 
     } finally {
       Properties p = System.getProperties();
+      p.remove("ebean.hikari.prefix.9");
       p.remove("ebean.hikari.prefix");
       p.remove("ebean.hikari.default-Db");
     }
   }
 
-
-  @Test void _emptyPropertyIsNotAbsentProperty () {
+  @Test
+	void _emptyPropertyIsNotAbsentProperty () {
     System.setProperty("fake_empty_prop", "");
     assertTrue(System.getProperties().containsKey("fake_empty_prop"));
     assertEquals("", System.getProperty("fake_empty_prop"));
     assertEquals("", System.getProperty("fake_empty_prop", "default"));
   }
 
-
-  @Test void _checkDefaultDbProperties () {
+  @Test
+	void _checkDefaultDbProperties () {
     var ds = (HikariEbeanDataSourcePool) DB.getDefault().dataSource();
     assertEquals("jdbc:h2:mem:my_app", ds.ds.getJdbcUrl());// from ebean-test platform
     assertEquals("org.h2.Driver", ds.ds.getDriverClassName());
@@ -145,4 +152,86 @@ class HikariEbeanDataSourcePoolTest {
     assertEquals(61_000, ds.ds.getIdleTimeout());
     assertNull(ds.ds.getConnectionInitSql());
   }
+
+	@Test
+	void testSpringCompatability () {
+		// val prev = (Properties) System.getProperties().clone();
+		var s = """
+	spring.datasource.ccbbaa.type=com.zaxxer.hikari.HikariDataSource
+	spring.datasource.ccbbaa.url=jdbc:h2:mem:FooBazYum
+	spring.datasource.ccbbaa.username=myLogin
+	spring.datasource.ccbbaa.password=mySecret
+	spring.datasource.ccbbaa.hikari.maximum-pool-size=10
+	spring.datasource.ccbbaa.hikari.connection-timeout=+30000
+	spring.datasource.ccbbaa.hikari.data-source-properties.DB_CLOSE_ON_EXIT=true
+	spring.datasource.ccbbaa.hikari.data-source-properties.NETWORK_TIMEOUT=42
+	""";
+		for (var line : s.split("\n")){
+			line = line.trim();
+			if (line.isEmpty()){ continue; }
+			var keyValue = line.split("=");
+			if (keyValue.length != 2){ continue; }
+			System.setProperty(keyValue[0].trim(), keyValue[1].trim());
+		}
+		assertEquals("10", System.getProperty("spring.datasource.ccbbaa.hikari.maximum-pool-size"));
+		assertEquals("jdbc:h2:mem:FooBazYum", System.getProperty("spring.datasource.ccbbaa.url"));
+
+		var db = DB.byName("CcBbAa");
+		assertEquals("HikariEbeanDataSourcePool:HikariDataSource (ebean.CcBbAa)", db.dataSource().toString());
+		assertEquals("CcBbAa", db.name());
+		var ds = (HikariEbeanDataSourcePool) db.dataSource();
+		assertEquals("ebean.CcBbAa", ds.name());
+		assertEquals("jdbc:h2:mem:FooBazYum", ds.ds.getJdbcUrl());
+		assertEquals("myLogin", ds.ds.getUsername());
+		assertEquals("mySecret", ds.ds.getPassword());
+		assertEquals(10, ds.ds.getMaximumPoolSize());
+		assertEquals(30_000, ds.ds.getConnectionTimeout());
+		assertEquals("{DB_CLOSE_ON_EXIT=true, NETWORK_TIMEOUT=42}", ds.ds.getDataSourceProperties().toString());
+		assertNull(ds.ds.getDataSource());
+		assertNull(ds.ds.getDataSourceClassName());
+		assertNull(ds.ds.getDriverClassName());
+		var sqlRow = db.sqlQuery("select 123").findOne();
+		assertEquals("{123=123}", sqlRow.toString());
+		assertNull(ds.ds.getDataSource());
+		assertNull(ds.ds.getDataSourceClassName());
+		assertNull(ds.ds.getDriverClassName());
+
+
+		// "default" We can't replace the already created, but we can check how it could be
+		var fakeConfig = new Properties();
+		System.getProperties().forEach((key, value)->{
+			var propertyName = trim(key);
+			if (propertyName.startsWith("spring.datasource.ccbbaa.")){
+				propertyName = propertyName.replace(".ccbbaa", "");
+				fakeConfig.setProperty(propertyName, value.toString());
+			}
+		});
+		assertEquals("10", fakeConfig.getProperty("spring.datasource.hikari.maximum-pool-size"));
+		assertEquals("jdbc:h2:mem:FooBazYum", fakeConfig.getProperty("spring.datasource.url"));
+
+		// DatabaseFactory.create("db" or "")
+		ds = new HikariEbeanDataSourcePool("db", new DataSourceConfig(), fakeConfig);
+
+		assertEquals("HikariEbeanDataSourcePool:HikariDataSource (ebean)", ds.toString());
+		assertEquals("ebean", ds.name());
+		assertEquals("jdbc:h2:mem:FooBazYum", ds.ds.getJdbcUrl());
+		assertEquals("myLogin", ds.ds.getUsername());
+		assertEquals("mySecret", ds.ds.getPassword());
+		assertEquals(10, ds.ds.getMaximumPoolSize());
+		assertEquals(30_000, ds.ds.getConnectionTimeout());
+		assertEquals("{DB_CLOSE_ON_EXIT=true, NETWORK_TIMEOUT=42}", ds.ds.getDataSourceProperties().toString());
+		assertNull(ds.ds.getDataSource());
+		assertNull(ds.ds.getDataSourceClassName());
+		assertNull(ds.ds.getDriverClassName());
+
+		// remove settings
+		System.getProperties().keySet().removeIf(k->{
+			val propertyName = trim(k);
+			return propertyName.startsWith("spring.datasource.");
+		});
+		assertNull(System.getProperty("spring.datasource.ccbbaa.hikari.maximum-pool-size"));
+		assertNull(System.getProperty("spring.datasource.ccbbaa.url"));
+		assertNull(System.getProperty("spring.datasource.hikari.maximum-pool-size"));
+		assertNull(System.getProperty("spring.datasource.url"));
+	}
 }
