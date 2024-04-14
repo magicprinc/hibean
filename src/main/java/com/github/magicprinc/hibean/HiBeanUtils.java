@@ -6,6 +6,7 @@ import io.ebean.DatabaseFactory;
 import io.ebean.annotation.Platform;
 import io.ebean.config.CurrentUserProvider;
 import io.ebean.config.DatabaseConfig;
+import io.ebean.config.MatchingNamingConvention;
 import jakarta.persistence.PersistenceException;
 import lombok.Getter;
 import lombok.NonNull;
@@ -45,8 +46,17 @@ import javax.sql.DataSource;
   logging.level.io.ebean.TXN=DEBUG
  }</pre>
 
+ https://ebean.io/docs/transactions/spring
+ <pre>{@code
+   io.ebean:ebean-spring-txn:latest.release
+
+   databaseConfig.setExternalTransactionManager(new SpringJdbcTransactionManager());
+ }</pre>
+
  @see io.ebean.BeanRepository
  @see io.ebean.annotation.Transactional
+
+ @see io.ebean.spring.txn.SpringJdbcTransactionManager
 
  @see jakarta.persistence.Entity
  @see jakarta.persistence.Table
@@ -88,7 +98,7 @@ public final class HiBeanUtils {
 	){
 		DatabaseConfig config = new DatabaseConfig();// config.loadFromProperties();
 		config.dataSource(dataSource);
-		config.setRegister(true);// register in DB singleton too (in addition to Spring bean)
+		config.register(true);// register in DB singleton too (in addition to Spring bean)
 
 		if (ebeanDatabaseName == null || ebeanDatabaseName.isEmpty() || "db".equals(ebeanDatabaseName)){
 			config.name("db");// db is the default name
@@ -107,6 +117,10 @@ public final class HiBeanUtils {
 			config.ddlRun(true);
 			config.ddlCreateOnly(true);
 		}
+
+		//config.persistBatch(PersistBatch.ALL);// use JDBC batch by default vs NONE
+		//config.persistBatchSize(100);// default batch size
+		config.namingConvention(new MatchingNamingConvention());// vs UnderscoreNamingConvention
 
 		try {
 			return DatabaseFactory.create(config);
