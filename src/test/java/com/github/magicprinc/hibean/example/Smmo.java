@@ -11,11 +11,11 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
+import lombok.experimental.Accessors;
 
 import javax.annotation.ParametersAreNullableByDefault;
 import java.time.LocalDateTime;
@@ -23,10 +23,11 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "smmo")
 @ParametersAreNullableByDefault
-@Data
-@ToString(doNotUseGetters = true, callSuper = false)
-@EqualsAndHashCode(doNotUseGetters = true, callSuper = false)
-@NoArgsConstructor  @AllArgsConstructor  @Builder(toBuilder = true)
+// DON'T! @Data, @EqualsAndHashCode  See https://ebean.io/docs/best-practice/
+@Getter  @Setter
+@ToString(doNotUseGetters = true, callSuper = false) // avoid getters!
+@NoArgsConstructor  @AllArgsConstructor
+@Accessors(fluent = true, chain = true) // instead of @Builder(toBuilder = true)
 public class Smmo extends Model implements FinderMixin<Smmo> {
 
 	public static final Finder<Long,Smmo> FIND = new Finder<>(Smmo.class);
