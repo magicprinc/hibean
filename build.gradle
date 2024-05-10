@@ -27,6 +27,7 @@ tasks.withType(JavaCompile).configureEach {
     enabled = true  // <<<!!! You can disable Error-Prone here!
     disableWarningsInGeneratedCode = true
     excludedPaths = ".*/build/gen.*/.*"
+		disable("MissingSummary")
     errorproneArgs = ["-XepExcludedPaths:.*/test/.*"]
   }
 }
