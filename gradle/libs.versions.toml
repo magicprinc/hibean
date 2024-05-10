@@ -18,7 +18,7 @@ groovy = "3.0.21!!" # иначе в момент обновления в maven c
 spring = "5.+!!" # Spring 5.3.32 vs boot 2.7.18 → 5.3.31
 springBoot = "2.+"
 jackson = "2.16.+!!"
-mssql = "12.6.1.jre11"
+mssql = "12.6.1.jre11!!" # 12.7.0
 eclipseCollections = "11.+"
 ebeanVersion = "latest.release"
 slf4jVersion = "1.7.+!!"
@@ -54,13 +54,14 @@ jakarta-activationApi = { module = 'jakarta.activation:jakarta.activation-api', 
 
 jdbc_mssql = { module = "com.microsoft.sqlserver:mssql-jdbc", version.ref="mssql" }
 jdbc_postgresql = { module = "org.postgresql:postgresql", version="latest.release" }
-jdbc_h2 = { module = "com.h2database:h2", version="latest.release" } # 2.2.224
+jdbc_mySql = { module = "com.mysql:mysql-connector-j", version="latest.release" }
+jdbc_h2 = { module = "com.h2database:h2", version="latest.release" } # ~2.2.224  Ignite ~ 1.4.197!!
 
 
 groovyCore = { module = "org.codehaus.groovy:groovy", version.ref="groovy" }
 groovyTemplates = { module = "org.codehaus.groovy:groovy-templates", version.ref="groovy" }
 
-guava = { module = "com.google.guava:guava", version="33.1.0-jre" }
+guava = { module = "com.google.guava:guava", version="33.2.0-jre!!" }
 commonsLang3 = { module = "org.apache.commons:commons-lang3", version="3.+" }
 apacheCommonsIo = { module = "commons-io:commons-io", version="2.+!!" }
 apacheCommonsCodec = { module = "commons-codec:commons-codec", version="1.+!!" }
@@ -80,9 +81,6 @@ micrometerRegistryPrometheus = { module = "io.micrometer:micrometer-registry-pro
 
 
 
-
-
-
 # модули Jackson разных версий не совместимы ⇒ форсируем единую самую свежую версию
 jacksonCore = { module = "com.fasterxml.jackson.core:jackson-core", version.ref="jackson" }
 jacksonDatabind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref="jackson" }
@@ -97,6 +95,7 @@ jacksonModuleJaxb = { module = "com.fasterxml.jackson.module:jackson-module-jaxb
 woodstoxXml = { module = "com.fasterxml.woodstox:woodstox-core", version="latest.release" }
 
 jacksonDataformatYaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml", version.ref="jackson" }
+snakeYaml = { module = "org.yaml:snakeyaml", version="2.+!!" } # Spring Boot тянет старый 1.30
 jacksonDataformatIon = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-ion", version.ref="jackson" }
 jacksonDataformatToml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-toml", version.ref="jackson" }
 jacksonDataformatSmile = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-smile", version.ref="jackson" }
@@ -112,8 +111,9 @@ springTx = { module = "org.springframework:spring-tx", version.ref="spring" }
 
 hikariCP = { module = "com.zaxxer:HikariCP", version="latest.release" }
 
-# eclipse-collections ↓ очень хорошие, но FastUtil тоже нужен т.к. содержит очереди e.g: LongArrayFIFOQueue, LongHeapPriorityQueue
-fastutil = { module = "it.unimi.dsi:fastutil", version="8.+" }
+# FastUtil содержит в т.ч. очереди: LongArrayFIFOQueue, LongHeapPriorityQueue
+fastutil = { module = "it.unimi.dsi:fastutil", version="latest.release" }
+# eclipse-collections ↓, но развитие затормозилось, bug с удалением 0 key из int/long Maps
 eclipseCollectionsApi = { module = "org.eclipse.collections:eclipse-collections-api", version.ref="eclipseCollections" }
 eclipseCollections = { module = "org.eclipse.collections:eclipse-collections", version.ref="eclipseCollections" }
 eclipseCollectionsFJ = { module = "org.eclipse.collections:eclipse-collections-forkjoin", version.ref="eclipseCollections" }
@@ -177,7 +177,7 @@ smallryeConfigValidator = { module = "io.smallrye.config:smallrye-config-validat
 faultTolerance = { module = "io.smallrye:smallrye-fault-tolerance-standalone", version="latest.release" }
 faultToleranceVertx = { module = "io.smallrye:smallrye-fault-tolerance-vertx", version="latest.release" }
 # io.smallrye:smallrye-fault-tolerance-mutiny + org.reactivestreams:reactive-streams:1.+
-# https://smallrye.io/smallrye-mutiny ➕ https://smallrye.io/smallrye-mutiny-vertx-bindings/ ➕ https://github.com/smallrye/smallrye-mutiny-vertx-bindings/tree/main/vertx-mutiny-clients
+# https://smallrye.io/smallrye-mutiny ➕ https://smallrye.io/smallrye-mutiny-vertx-bindings/ ➕ https://github.com/smallrye/smallrye-mutiny-vertx-bindings/tree/main/vertx-mutiny-clients ➕ io.smallrye.reactive:smallrye-mutiny-vertx-runtime:latest.release
 
 ########################################################################################################################
 # compileOnly API
@@ -232,8 +232,8 @@ coreAnnotation = ["jsr305","errorprone","smallryeCommonAnnotation","javax-annota
 
 junit = [ # "hikariCP" boot обнаруживает его и требует jdbc url в конфиге
 		"junitJupiter","junitVintageEngine", "mockitoCore","mockitoJunitJupiter", "googleTruth","googleTruthJava8",
-    "springTest","eclipseCollectionsTest","logback","jsonAssert","okHttp-mockWebServer","okio",
-		#"testInstancio","testInstancioQuickCheck","springBootStarterTest","groovyCore","groovyTemplates",
+    "springTest","eclipseCollectionsTest","logback","jsonAssert","okHttp-mockWebServer","okio","okHttpClient",
+		"testInstancio","springBootStarterTest","groovyCore","groovyTemplates", # "testInstancioQuickCheck"
 		"byteBuddy", "byteBuddyAgent"
 	]
 
@@ -245,18 +245,19 @@ springMini = ["springCore","springContext","springJdbc"]
 
 groovyMini = ["groovyCore","groovyTemplates"]
 
-smallryeConfig = ["smallryeConfig","smallryeConfigSourceYaml","smallryeConfigValidator","jakarta-validationApi","jakarta-annotationApi"]
+smallryeConfig = ["smallryeConfig","smallryeConfigSourceYaml","snakeYaml","smallryeConfigValidator","jakarta-validationApi","jakarta-annotationApi"]
 
 okHttp = ["okHttpClient","okhttpLoggingInterceptor","okio"]
 
 
-upgradeBootApp = [
-		"jsr305","errorprone","smallryeCommonAnnotation","javax-annotationApi","jakarta-annotationApi",
-		"jacksonCore","jacksonDatabind","jacksonAnnotations", "jacksonDatatypeJsr310","jacksonDatatypeJdk8","jacksonModuleParameterNames",
-		"javax-validationApi","jakarta-validationApi",
-		"swaggerAnnotations", "hikariCP", "apacheHttpClient5",
-		"guava", "commonsLang3", "caffeine", "slf4jApi", "slf4jJCL", "slf4jJUL", "slf4jLog4j", "micrometerCore", "micrometerRegistryPrometheus"
-	  # , "commonUtils", "commonMetricsExt"
+upgradeBootApp = [ # "hikariCP" boot обнаруживает его и требует jdbc url в конфиге
+	"jsr305","errorprone","smallryeCommonAnnotation","javax-annotationApi","jakarta-annotationApi",
+	"jacksonCore","jacksonDatabind","jacksonAnnotations", "jacksonDatatypeJsr310","jacksonDatatypeJdk8","jacksonModuleParameterNames",
+	"javax-validationApi","jakarta-validationApi", "swaggerAnnotations",
+	"guava", "commonsLang3", "caffeine", "slf4jApi", "slf4jJCL", "slf4jJUL", "slf4jLog4j",
+	"micrometerCore", "micrometerRegistryPrometheus",
+	"commonUtils", "commonMetricsExt",
+	"springCore","springContext","springJdbc", "springWeb"
 	]
 
 ########################################################################################################################
@@ -270,7 +271,7 @@ versions = { id = "com.github.ben-manes.versions", version="latest.release" } # 
 spring-dependencyManagement = { id = "io.spring.dependency-management", version="1.+" }
 # нам нужен Spring Boot для объявления всех зависимостей, но не нужны bootJar и тд и suffix -plain у lib.jar
 # https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/#managing-dependencies.dependency-management-plugin.using-in-isolation
-spring-boot = { id = "org.springframework.boot", version.ref="springBoot" }
+spring-boot = { id = "org.springframework.boot", version.ref="springBoot" } # Vaadin 23 doesn't work with Boot3
 
 # alias(libs.plugins.spring.dependencyManagement)
 # alias(libs.plugins.spring.boot).apply(false)
@@ -290,3 +291,6 @@ gradleGitProperties = { id = "com.gorylenko.gradle-git-properties", version="lat
 
 # https://github.com/Im-Fran/GradleDotEnv  →  https://plugins.gradle.org/plugin/cl.franciscosolis.gradledotenv
 dotEnv = { id = "cl.franciscosolis.gradledotenv", version="latest.release" }
+
+# https://gretty-gradle-plugin.github.io/gretty-doc/index.html  ➕  https://github.com/gretty-gradle-plugin/gretty/tree/gretty-3.x
+grettyWebContainer = { id = "org.gretty", version="3.+" } # 4.+ for jakarta packages
