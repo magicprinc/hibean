@@ -1,2 +1,5 @@
 jdk:
   - openjdk17
+
+install:
+  - ./gradlew clean build test -x sonarlintMain -x sonarlintTest --console=plain --continue --warning-mode all
