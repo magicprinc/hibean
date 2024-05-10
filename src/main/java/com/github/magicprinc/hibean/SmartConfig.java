@@ -1,25 +1,25 @@
 package com.github.magicprinc.hibean;
 
-import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
 
 /**
  @see HikariEbeanDataSourcePool
- @see io.avaje.config.Config
  @see org.eclipse.microprofile.config.Config
  */
 interface SmartConfig {
 
 	List<String> getPropertyNames ();
 
-	String getProperty (String name);
+	@Nullable	String getProperty (String name);
 
 	default String getProperty (String name, String defaultValue) {
 		var value = getProperty(name);
@@ -29,28 +29,20 @@ interface SmartConfig {
 		return defaultValue;
 	}
 
-	static SmartConfig of (@NonNull Properties ebeanConfig) {
+	static SmartConfig of (Map<String,String> avajeConfig) {
 		try {
-			Config config = ConfigProvider.getConfig();
-			return new SmartConfigMicroprofile(config, ebeanConfig);
+			org.eclipse.microprofile.config.Config config = ConfigProvider.getConfig();
+			return new SmartConfigMicroprofile(config, avajeConfig);
 		} catch (Throwable e){// NoClassDefFoundError | IllegalStateException
-			return new SmartConfigSysEnv(ebeanConfig);
+			return new SmartConfigAvajeConfig(avajeConfig);
 		}
-	}
+	}//new
 
 
+	@RequiredArgsConstructor  @ToString
   class SmartConfigMicroprofile implements SmartConfig {
 		private final Config config;
-		private final Properties ebeanConfig;
-
-		public SmartConfigMicroprofile (@NonNull Config config, Properties ebeanConfig) {
-			this.config = config;  this.ebeanConfig = ebeanConfig;
-		}//new
-
-		@Override
-		public String toString () {
-			return "SmartConfigMicroprofile:"+config+":"+ebeanConfig;
-		}
+		private final Map<String,String> ebeanConfig;// fallback
 
 		@Override
 		@Nullable	public String getProperty (String name) {
@@ -58,7 +50,7 @@ interface SmartConfig {
 			if (value != null && value.isPresent()){
 				return value.get();
 			}
-			return ebeanConfig.getProperty(name);
+			return ebeanConfig.get(name);
 		}
 
 		@Override
@@ -73,44 +65,20 @@ interface SmartConfig {
 		}
 	}//SmartConfigMicroprofile
 
-	class SmartConfigSysEnv implements SmartConfig {
-		private final Properties ebeanConfig;
 
-		public SmartConfigSysEnv (Properties ebeanConfig) {
-			this.ebeanConfig = ebeanConfig;
-		}//new
-
-		@Override
-		public String toString () {
-			return "SmartConfigSysEnv:"+ebeanConfig;
-		}
+	@RequiredArgsConstructor  @ToString
+	class SmartConfigAvajeConfig implements SmartConfig {
+		final Map<String,String> ebeanConfig;
 
 		@Override
 		@Nullable	public String getProperty (String name) {
-			var value = System.getProperty(name);
-			if (value != null){
-				return value;
-			}
-
-			value = System.getenv(name);
-			if (value != null){
-				return value;
-			}
-
-			return ebeanConfig.getProperty(name);
+			//avaje Config.getOptional(key), Config.getNullable(name)
+			return ebeanConfig.get(name);
 		}
 
 		@Override
 		public List<String> getPropertyNames () {
-			var names = new ArrayList<String>(System.getenv().size() + System.getProperties().size() + ebeanConfig.size());
-
-			names.addAll(ebeanConfig.keySet().stream().filter(Objects::nonNull).map(Object::toString).toList());
-
-			names.addAll(System.getenv().keySet());
-
-			names.addAll(System.getProperties().keySet().stream().filter(Objects::nonNull).map(Object::toString).toList());
-
-			return names;
+			return ebeanConfig.keySet().stream().filter(Objects::nonNull).map(Object::toString).toList();
 		}
-	}//SmartConfigSysEnv
+	}//SmartConfigAvajeConfig
 }

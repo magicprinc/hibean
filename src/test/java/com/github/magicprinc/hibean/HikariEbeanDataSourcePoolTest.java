@@ -14,6 +14,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Properties;
 
 import static com.github.magicprinc.hibean.HikariEbeanDataSourcePool.isNumeric;
@@ -198,16 +199,16 @@ class HikariEbeanDataSourcePoolTest {
 
 
 		// "default" We can't replace the already created, but we can check how it could be
-		var fakeConfig = new Properties();
+		var fakeConfig = new HashMap<String,String>(42);
 		System.getProperties().forEach((key, value)->{
 			var propertyName = trim(key);
 			if (propertyName.startsWith("spring.datasource.ccbbaa.")){
 				propertyName = propertyName.replace(".ccbbaa", "");
-				fakeConfig.setProperty(propertyName, value.toString());
+				fakeConfig.put(propertyName, value.toString());
 			}
 		});
-		assertEquals("10", fakeConfig.getProperty("spring.datasource.hikari.maximum-pool-size"));
-		assertEquals("jdbc:h2:mem:FooBazYum", fakeConfig.getProperty("spring.datasource.url"));
+		assertEquals("10", fakeConfig.get("spring.datasource.hikari.maximum-pool-size"));
+		assertEquals("jdbc:h2:mem:FooBazYum", fakeConfig.get("spring.datasource.url"));
 
 		// DatabaseFactory.create("db" or "")
 		ds = new HikariEbeanDataSourcePool("db", new DataSourceConfig(), fakeConfig);

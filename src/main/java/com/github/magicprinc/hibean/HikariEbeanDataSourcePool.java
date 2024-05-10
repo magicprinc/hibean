@@ -8,7 +8,6 @@ import com.zaxxer.hikari.metrics.micrometer.MicrometerMetricsTracker;
 import com.zaxxer.hikari.pool.HikariPool;
 import com.zaxxer.hikari.util.IsolationLevel;
 import com.zaxxer.hikari.util.PropertyElf;
-import io.avaje.config.Config;
 import io.ebean.config.DatabaseConfig;
 import io.ebean.datasource.DataSourceConfig;
 import io.ebean.datasource.DataSourcePool;
@@ -44,6 +43,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import static io.ebean.util.CamelCaseHelper.toCamelFromUnderscore;
+import static java.util.Objects.requireNonNullElseGet;
 
 /**
  {@link DataSourcePool} implementation that uses {@link HikariDataSource}.
@@ -72,15 +72,22 @@ import static io.ebean.util.CamelCaseHelper.toCamelFromUnderscore;
 @Slf4j  @RequiredArgsConstructor
 public class HikariEbeanDataSourcePool implements DataSourcePool {
 
+	/**
+	 By default, Ebean pool autoCommit == false.
+	 It can be overridden in config or globally here (if not null).
+	 */
+	public static Boolean autoCommitOverride = null;
+
   final HikariDataSource ds;
 
-  public HikariEbeanDataSourcePool (String callerPoolName, DataSourceConfig config, Properties configAsProperties) {
-		val defaultDatabaseName = determineDefaultServerName();// usually "db"
+  public HikariEbeanDataSourcePool (String callerPoolName, DataSourceConfig config, Map<String,String> avajeConfig) {
+		val cfg = SmartConfig.of(avajeConfig);// System.properties overwrite file.properties
+
+		val defaultDatabaseName = determineDefaultServerName(cfg);// usually "db"
     val tmpTrimPoolName = trim(callerPoolName);
     val hikariPoolName = tmpTrimPoolName.isEmpty() || tmpTrimPoolName.equals(defaultDatabaseName)
 				? "ebean"
         : "ebean."+ tmpTrimPoolName;
-		val cfg = SmartConfig.of(configAsProperties);// System.properties overwrite file.properties
 		val databaseName = makeDatabaseNamePrefix(tmpTrimPoolName, defaultDatabaseName, cfg);
 		Map<String,String> aliasMap = alias();
     val prefixes = collectPrefixes(cfg);
@@ -148,15 +155,15 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
    * Determine and return the default server name checking system environment variables and then global properties.
    * @see io.ebean.DbPrimary#determineDefaultServerName
    */
-  private static String determineDefaultServerName () {
+  private static String determineDefaultServerName (SmartConfig cfg) {
     String defaultServerName = trim(System.getProperty("ebean_db", System.getenv("EBEAN_DB")));
 		if (!defaultServerName.isEmpty()){
 			return defaultServerName;
 		}
 
-    defaultServerName = Config.getOptional("datasource.default").orElse(null);
+    defaultServerName = cfg.getProperty("datasource.default");
     if (trim(defaultServerName).isEmpty()){
-    	defaultServerName = Config.getOptional("ebean.default.datasource").orElse(null);
+    	defaultServerName = cfg.getProperty("ebean.default.datasource");
     }
 
     return defaultServerName == null ? "db"
@@ -254,7 +261,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     sets(dsc.getSchema(), hc::setSchema);
 
     hc.setTransactionIsolation(IsolationLevel.values()[dsc.getIsolationLevel()].toString());
-    hc.setAutoCommit(dsc.isAutoCommit());//!!! ebean default autoCommit==FALSE!!!
+		hc.setAutoCommit(requireNonNullElseGet(autoCommitOverride, dsc::isAutoCommit));//!!! ebean default autoCommit==FALSE!!!
     seti(dsc.getMinConnections(), hc::setMinimumIdle);
     seti(dsc.getMaxConnections(), hc::setMaximumPoolSize);
 
@@ -452,7 +459,9 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     return hPool.getTotalConnections();
   }
 
-  @Override public boolean isAutoCommit () { return ds.isAutoCommit(); }
+  @Override public boolean isAutoCommit () {
+		return ds.isAutoCommit();
+	}
 
   @Override public boolean isOnline () {
     return ds.isRunning() && !ds.isClosed();
