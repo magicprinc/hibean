@@ -254,7 +254,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     sets(dsc.getSchema(), hc::setSchema);
 
     hc.setTransactionIsolation(IsolationLevel.values()[dsc.getIsolationLevel()].toString());
-    hc.setAutoCommit(dsc.isAutoCommit());
+    hc.setAutoCommit(dsc.isAutoCommit());//!!! ebean default autoCommit==FALSE!!!
     seti(dsc.getMinConnections(), hc::setMinimumIdle);
     seti(dsc.getMaxConnections(), hc::setMaximumPoolSize);
 
