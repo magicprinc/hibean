@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -16,38 +17,38 @@ class SmartConfigTest {
 		var ebeanConfig = new LinkedHashMap<String,String>();
 		ebeanConfig.put("a", "111");
 		ebeanConfig.put("foo.bar.Zoo", " xXx ");
-		var cfg = new SmartConfig.SmartConfigAvajeConfig(ebeanConfig);
+		var cfg = SmartConfig.of(ebeanConfig);
 		//System.out.println(cfg.getPropertyNames());
 
-		assertEquals(2, cfg.getPropertyNames().size());
-		assertEquals("111", cfg.getProperty("a"));
-		assertEquals(" xXx ", cfg.getProperty("foo.bar.Zoo"));
-		assertEquals("SmartConfig.SmartConfigAvajeConfig(ebeanConfig={a=111, foo.bar.Zoo= xXx })", cfg.toString());
+		assertEquals(2, cfg.size());
+		assertEquals("111", cfg.get("a"));
+		assertEquals(" xXx ", cfg.get("foo.bar.Zoo"));
+		assertEquals("{a=111, foo.bar.Zoo= xXx }", cfg.toString());
 
-		assertEquals(" Zzz ", cfg.getProperty(" ---Xzzz."," Zzz "));
+		assertEquals(" Zzz ", cfg.getOrDefault(" ---Xzzz."," Zzz "));
 	}
 
 	@Test
 	void _asProperties () {
-		var ebeanConfig = HikariEbeanConnectionPoolFactory.asProperties();
+		var ebeanConfig = SmartConfig.asProperties();
 		ebeanConfig.put("a", "111");
 		ebeanConfig.put("foo.bar.Zoo", " xXx ");
-		var cfg = new SmartConfig.SmartConfigAvajeConfig(ebeanConfig);
+		var cfg = SmartConfig.of(ebeanConfig);
 		//System.out.println(cfg.getPropertyNames());
 
-		assertTrue(cfg.getPropertyNames().size() > 10);
-		assertEquals("111", cfg.getProperty("a"));
-		assertEquals(" xXx ", cfg.getProperty("foo.bar.Zoo"));
-		assertTrue(Objects.requireNonNull(cfg.getProperty("java.version")).length() > 3);
-		assertFalse(Objects.requireNonNull(cfg.getProperty(System.getenv().keySet().iterator().next())).isEmpty());
-		assertTrue(cfg.toString().startsWith("SmartConfig.SmartConfigAvajeConfig(ebeanConfig={"));
+		assertTrue(cfg.size() > 10);
+		assertEquals("111", cfg.get("a"));
+		assertEquals(" xXx ", cfg.get("foo.bar.Zoo"));
+		assertTrue(Objects.requireNonNull(cfg.get("java.version")).length() > 3);
+		assertFalse(Objects.requireNonNull(cfg.get(System.getenv().keySet().iterator().next())).isEmpty());
+		assertTrue(cfg.toString().startsWith("{"));
 
-		assertEquals(" Zzz ", cfg.getProperty(" ---Xzzz."," Zzz "));
+		assertEquals(" Zzz ", cfg.getOrDefault(" ---Xzzz."," Zzz "));
 	}
 
 	@Test
 	void create () {
-		assertInstanceOf(SmartConfig.SmartConfigAvajeConfig.class, SmartConfig.of(new HashMap<>()));
+		assertInstanceOf(Map.class, SmartConfig.of(new HashMap<>()));
 	}
 
 //	@Test

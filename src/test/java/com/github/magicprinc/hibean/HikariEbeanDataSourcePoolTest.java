@@ -178,7 +178,7 @@ class HikariEbeanDataSourcePoolTest {
 		assertEquals("jdbc:h2:mem:FooBazYum", System.getProperty("spring.datasource.ccbbaa.url"));
 
 		var db = DB.byName("CcBbAa");
-		assertEquals("HikariEbeanDataSourcePool:HikariDataSource (ebean.CcBbAa)", db.dataSource().toString());
+		assertEquals("HikariEbeanDataSourcePool(ds=HikariDataSource (ebean.CcBbAa))", db.dataSource().toString());
 		assertEquals("CcBbAa", db.name());
 		var ds = (HikariEbeanDataSourcePool) db.dataSource();
 		assertEquals("ebean.CcBbAa", ds.name());
@@ -213,7 +213,7 @@ class HikariEbeanDataSourcePoolTest {
 		// DatabaseFactory.create("db" or "")
 		ds = new HikariEbeanDataSourcePool("db", new DataSourceConfig(), fakeConfig);
 
-		assertEquals("HikariEbeanDataSourcePool:HikariDataSource (ebean)", ds.toString());
+		assertEquals("HikariEbeanDataSourcePool(ds=HikariDataSource (ebean))", ds.toString());
 		assertEquals("ebean", ds.name());
 		assertEquals("jdbc:h2:mem:FooBazYum", ds.ds.getJdbcUrl());
 		assertEquals("myLogin", ds.ds.getUsername());
