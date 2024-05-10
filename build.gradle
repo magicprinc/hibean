@@ -40,7 +40,7 @@ dependencies {
 	implementation(libs.bundles.jackson)
 	implementation(libs.jakarta.activationApi)
 	implementation(libs.jakarta.validationApi)
-	implementation(libs.slf4jApi)
+	implementation(libs.slf4jApi, libs.slf4jJCL)
 
 	compileOnly("org.eclipse.microprofile.config:microprofile-config-api:latest.release")
 
@@ -91,6 +91,7 @@ configurations.configureEach { // .implementation ? https://tomgregory.com/how-t
 	exclude group: 'io.ebean', module: 'ebean-platform-clickhouse'
 
 	exclude group: "commons-logging", module: "commons-logging" // spring?
+	exclude group: 'org.springframework', module: 'spring-jcl'
 	exclude group: "org.apache.logging.log4j", module: "log4j-api"
 	exclude group: "org.apache.logging.log4j", module: "log4j-to-slf4j"
 	exclude group: "org.jboss.slf4j", module:  "slf4j-jboss-logmanager"
@@ -114,7 +115,7 @@ test {
   enableAssertions = true
   maxHeapSize = "500m"
 
-  systemProperty("slf4j.detectLoggerNameMismatch", "true")
+  //systemProperty("slf4j.detectLoggerNameMismatch", "true")
   systemProperty("file.encoding", "UTF-8")
 
   systemProperty("user.language", "en")

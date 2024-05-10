@@ -256,7 +256,6 @@ upgradeBootApp = [ # "hikariCP" boot обнаруживает его и треб
 	"javax-validationApi","jakarta-validationApi", "swaggerAnnotations",
 	"guava", "commonsLang3", "caffeine", "slf4jApi", "slf4jJCL", "slf4jJUL", "slf4jLog4j",
 	"micrometerCore", "micrometerRegistryPrometheus",
-	"commonUtils", "commonMetricsExt",
 	"springCore","springContext","springJdbc", "springWeb"
 	]
 
