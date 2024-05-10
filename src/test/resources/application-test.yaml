@@ -1,6 +1,8 @@
 ebean:
   dumpMetricsOnShutdown: true
   dumpMetricsOptions: loc,sql,hash #hash,sql,loc
+#^^^
+
   test:
 #    useDocker: false
 #    shutdown: stop # stop | remove
