@@ -1,5 +1,6 @@
 jdk:
-  - openjdk17
+  - openjdk21
 
 install:
-  - gradle clean build test -x sonarlintMain -x sonarlintTest --console=plain --continue --warning-mode all
+  - chmod +x gradlew
+  - ./gradlew clean build test -x sonarlintMain -x sonarlintTest --console=plain --continue --warning-mode all publishToMavenLocal
