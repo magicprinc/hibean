@@ -5,13 +5,15 @@ import com.zaxxer.hikari.HikariDataSource;
 import io.ebean.DB;
 import org.junit.jupiter.api.Test;
 
+import java.sql.SQLException;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  @see HiBeanUtils */
 class HiBeanUtilsTest {
 	@Test
-	void basic () {
+	void basic () throws SQLException {
 		var springDataSource = new HikariDataSource();
 		//springDataSource.setJdbcUrl("jdbc:sqlserver://127.0.0.1;databaseName=front;trustServerCertificate=true");
 		//springDataSource.setUsername("and password");
@@ -20,7 +22,8 @@ class HiBeanUtilsTest {
 		HiBeanUtils.setDdl(true);
 		var db = HiBeanUtils.database("fooBarZoo", springDataSource, null);
 
-		assertSame(springDataSource, db.dataSource());
+		assertEquals(new HikariEbeanDataSourceWrapper(springDataSource), db.dataSource());
+		assertSame(springDataSource, db.dataSource().unwrap(HikariDataSource.class));
 		assertEquals("fooBarZoo", db.name());
 		assertSame(db, DB.byName("fooBarZoo"));
 

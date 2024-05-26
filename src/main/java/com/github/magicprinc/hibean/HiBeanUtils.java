@@ -97,7 +97,7 @@ public final class HiBeanUtils {
 		@Nullable CurrentUserProvider currentUserProvider
 	){
 		DatabaseConfig config = new DatabaseConfig();// config.loadFromProperties();
-		config.dataSource(dataSource);
+		config.dataSource(HikariEbeanDataSourceWrapper.wrap(dataSource));
 		config.register(true);// register in DB singleton too (in addition to Spring bean)
 
 		if (ebeanDatabaseName == null || ebeanDatabaseName.isEmpty() || "db".equals(ebeanDatabaseName)){

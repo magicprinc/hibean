@@ -68,4 +68,20 @@ class SmartConfigTest {
 //		assertFalse(Objects.requireNonNull(cfg.getProperty(System.getenv().keySet().iterator().next())).isEmpty());
 //		assertTrue(cfg.toString().startsWith("SmartConfigMicroprofile:io.smallrye.config.SmallRyeConfig@"));
 //	}
+
+	@Test
+	void _trim () {
+		assertEquals("", SmartConfig.trim(null));
+		assertEquals("", SmartConfig.trim(""));
+		assertEquals("", SmartConfig.trim(" \r\n\t"));
+		assertEquals("x y", SmartConfig.trim(" x y \n"));
+		assertEquals(".", SmartConfig.trim(" . \n"));
+	}
+
+	@Test
+	void _alias () {
+		Map<String,String> alias = SmartConfig.alias();
+		assertEquals(5, alias.size());
+		assertEquals("jdbcUrl", alias.get("url"));
+	}
 }

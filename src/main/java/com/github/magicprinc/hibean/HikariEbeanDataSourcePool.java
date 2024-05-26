@@ -1,37 +1,19 @@
 package com.github.magicprinc.hibean;
 
 import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariConfigMXBean;
 import com.zaxxer.hikari.HikariDataSource;
-import com.zaxxer.hikari.HikariPoolMXBean;
-import com.zaxxer.hikari.metrics.micrometer.MicrometerMetricsTracker;
-import com.zaxxer.hikari.pool.HikariPool;
 import com.zaxxer.hikari.util.IsolationLevel;
 import com.zaxxer.hikari.util.PropertyElf;
 import io.ebean.config.DatabaseConfig;
 import io.ebean.datasource.DataSourceConfig;
 import io.ebean.datasource.DataSourcePool;
-import io.ebean.datasource.PoolStatus;
 import io.micrometer.core.instrument.Metrics;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
-import javax.sql.DataSource;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.text.Normalizer;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -40,9 +22,10 @@ import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
 
+import static com.github.magicprinc.hibean.SmartConfig.alias;
+import static com.github.magicprinc.hibean.SmartConfig.normValue;
+import static com.github.magicprinc.hibean.SmartConfig.trim;
 import static io.ebean.util.CamelCaseHelper.toCamelFromUnderscore;
 import static java.util.Objects.requireNonNullElseGet;
 
@@ -70,15 +53,13 @@ import static java.util.Objects.requireNonNullElseGet;
 
  @author a.fink
  */
-@Slf4j  @RequiredArgsConstructor  @ToString
-public class HikariEbeanDataSourcePool implements DataSourcePool {
+@Slf4j
+class HikariEbeanDataSourcePool extends HikariEbeanDataSourceWrapper {
 	/**
 	 By default, Ebean pool autoCommit == false.
 	 It can be overridden in config or globally here (if not null).
 	 */
-	public static Boolean autoCommitOverride = null;
-
-  final HikariDataSource ds;
+	public static Boolean autoCommitOverrideEbeanConfig = null;
 
   public HikariEbeanDataSourcePool (String callerPoolName, DataSourceConfig config, Map<String,String> avajeConfig) {
 		val cfg = SmartConfig.of(avajeConfig);// System.properties overwrite file.properties
@@ -261,7 +242,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     sets(dsc.getSchema(), hc::setSchema);
 
     hc.setTransactionIsolation(IsolationLevel.values()[dsc.getIsolationLevel()].toString());
-		hc.setAutoCommit(requireNonNullElseGet(autoCommitOverride, dsc::isAutoCommit));//!!! ebean default autoCommit==FALSE!!!
+		hc.setAutoCommit(requireNonNullElseGet(autoCommitOverrideEbeanConfig, dsc::isAutoCommit));//!!! ebean default autoCommit==FALSE!!!
     seti(dsc.getMinConnections(), hc::setMinimumIdle);
     seti(dsc.getMaxConnections(), hc::setMaximumPoolSize);
 
@@ -287,29 +268,6 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     }
   }
 
-  /** Property name aliases: ebean property name → hikari property name. E.g. url → jdbcUrl*/
-  protected Map<String,String> alias (){
-    try {
-      InputStream is = getClass().getResourceAsStream("/ebean/ehpalias.properties");
-      if (is == null){ return Collections.emptyMap(); }// can't be! There is the file!
-      try (is){
-        Properties p = new Properties();
-        p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
-        HashMap<String,String> m = new HashMap<>(p.size()+31);
-        for (var e : p.entrySet()){
-          m.put(stripKey(e.getKey()), trim(e.getValue()));
-        }
-        return m;
-      }
-    } catch (Throwable ignore){
-      return Collections.emptyMap();
-    }
-  }
-  /** trim, lowerCase(EN), remove - and _ */
-  private static String stripKey (Object key){
-    return trim(key).toLowerCase(Locale.ENGLISH).replace("-", "").replace("_", "");
-  }
-
   void sets (String dataSourceConfig, Consumer<String> setter){
     String s = trim(dataSourceConfig);
     if ( !s.isEmpty() ){// e.g. driver can't be ""
@@ -327,38 +285,6 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
     }
   }
 
-  static String trim (Object s){
-    return s == null ? "" : s.toString().trim().strip();
-  }
-
-  /** Is "+1,000_000.17" numeric? 0x is not supported by ConfigPropertiesHelper.getInt */
-  static boolean isNumeric (CharSequence s){
-    int digits = 0;
-    for (int i = 0, len = s.length(); i < len; i++){
-      char c = s.charAt(i);
-      if (Character.isDigit(c)){
-        digits++;
-        continue;
-      }
-      boolean numeric = Character.isSpaceChar(c) || Character.isWhitespace(c)
-          || c == '+' || c == '-' || c == '.' || c == ',' || c == '_' || c == 'e' || c == 'E';
-      if (!numeric){
-        return false;
-      }
-    }
-    return digits > 0;
-  }
-
-  static String normValue (Object value) {
-    String s = Normalizer.normalize(value.toString(), Normalizer.Form.NFC);
-
-    if (isNumeric(s)){
-      return SPACE_AND_UNDERSCORE.matcher(s.trim().strip()).replaceAll("");
-    }
-    return s;
-  }
-  private static final Pattern SPACE_AND_UNDERSCORE = Pattern.compile("[\\s_]", Pattern.CASE_INSENSITIVE|Pattern.UNICODE_CHARACTER_CLASS);
-
   /** Prefixes to filter our (hikari) property names. Default: db. → datasource.db → spring.datasource.db.hikari. */
   private static List<String> collectPrefixes (Map<String,String> cfg){
     String[] p = new String[16];
@@ -374,7 +300,7 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
       p[i] = trim(cfg.getOrDefault(key, p[i])).toLowerCase(Locale.ENGLISH);
     }
 		return Arrays.stream(p)
-			.map(HikariEbeanDataSourcePool::trim)
+			.map(SmartConfig::trim)
 				.filter(pre->pre.length() > 1)
 				.sorted(Comparator.comparing(String::length).reversed())
 				.toList();
@@ -449,133 +375,5 @@ public class HikariEbeanDataSourcePool implements DataSourcePool {
 				log.warn("filter: Config has property name {} without value @ {}.{}", e.getKey(), db, propertyName);
 			}
 		}
-  }
-
-  @Override public String name () {
-		return ds.getPoolName();
-	}
-
-  @Override public int size () {
-    HikariPoolMXBean hPool = ds.getHikariPoolMXBean();
-    return hPool.getTotalConnections();
-  }
-
-  @Override public boolean isAutoCommit () {
-		return ds.isAutoCommit();
-	}
-
-  @Override public boolean isOnline () {
-    return ds.isRunning() && !ds.isClosed();
-  }
-
-  @Override public boolean isDataSourceUp () {
-    return isOnline();
-  }
-
-  @Override public void online () {
-    ds.getHikariPoolMXBean().resumePool();
-  }
-
-  @Override public void offline () {
-    ds.getHikariPoolMXBean().suspendPool();
-  }
-
-  @Override public void shutdown () {
-    ds.close();
-  }
-
-  @Override public PoolStatus status (boolean reset) {
-    HikariConfigMXBean cfg = ds.getHikariConfigMXBean();
-    HikariPoolMXBean pool = ds.getHikariPoolMXBean();
-
-    return new PoolStatus(){
-      @Override public int minSize () {
-        return cfg.getMinimumIdle();
-      }
-      @Override public int maxSize () {
-        return cfg.getMaximumPoolSize();
-      }
-      @Override public int free () {
-        return pool.getIdleConnections();
-      }
-      @Override public int busy () {
-        return pool.getActiveConnections();
-      }
-      @Override public int waiting () {
-        return pool.getThreadsAwaitingConnection();
-      }
-      /** todo {@link MicrometerMetricsTracker} */
-      @Override public int highWaterMark () {
-        return pool.getActiveConnections();
-      }
-      @Override public int waitCount () {
-        return 0;
-      }
-      @Override public int hitCount () {
-        return 0;
-      }
-    };
-  }
-
-  @Override public SQLException dataSourceDownReason () { return null; }
-
-  @Override public void setMaxSize (int max) {
-    HikariConfigMXBean cfg = ds.getHikariConfigMXBean();
-    cfg.setMaximumPoolSize(max);
-  }
-
-  /** @deprecated see {@link DataSourcePool#setWarningSize(int)} */
-  @Deprecated @Override public void setWarningSize (int warningSize) {
-    // 1. Deprecated 2. No similar functionality in Hikari
-  }
-
-  /** @deprecated see {@link DataSourcePool#getWarningSize()} */
-  @Deprecated @Override public int getWarningSize (){ return 0; }
-
-
-  @Override public Connection getConnection () throws SQLException {
-    return ds.getConnection();
-  }
-
-  @Override public Connection getConnection (String username, String password) throws SQLException {
-    return ds.getConnection(username, password);
-  }
-
-  @Override public PrintWriter getLogWriter () throws SQLException {
-    return ds.getLogWriter();
-  }
-
-  @Override public void setLogWriter (PrintWriter out) throws SQLException {
-    ds.setLogWriter(out);
-  }
-
-  @Override public void setLoginTimeout (int seconds) throws SQLException {
-    ds.setLoginTimeout(seconds);
-  }
-
-  @Override public int getLoginTimeout () throws SQLException {
-    return ds.getLoginTimeout();
-  }
-
-  @Override public Logger getParentLogger () throws SQLFeatureNotSupportedException {
-    return ds.getParentLogger();
-  }
-
-  @SuppressWarnings("unchecked") @Override
-  public <T> T unwrap (Class<T> iface) throws SQLException {
-    if (iface == null || iface == HikariDataSource.class || iface == HikariConfig.class){
-      return (T) ds;
-    }
-
-    if (DataSource.class.equals(iface)){
-      HikariPool p = (HikariPool) ds.getHikariPoolMXBean();// hack!
-      return (T) p.getUnwrappedDataSource();
-    }
-
-    return ds.unwrap(iface);
-  }
-
-  @Override public boolean isWrapperFor (Class<?> iface) throws SQLException {
-    return ds.isWrapperFor(iface);
   }
 }

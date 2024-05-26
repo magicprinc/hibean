@@ -16,11 +16,11 @@ import java.sql.SQLException;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
-import static com.github.magicprinc.hibean.HikariEbeanDataSourcePool.isNumeric;
-import static com.github.magicprinc.hibean.HikariEbeanDataSourcePool.normValue;
-import static com.github.magicprinc.hibean.HikariEbeanDataSourcePool.trim;
-import static java.util.stream.Collectors.joining;
+import static com.github.magicprinc.hibean.SmartConfig.isNumeric;
+import static com.github.magicprinc.hibean.SmartConfig.normValue;
+import static com.github.magicprinc.hibean.SmartConfig.trim;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -34,6 +34,7 @@ class HikariEbeanDataSourcePoolTest {
     assertFalse(isNumeric(" _"));
 
     assertTrue(isNumeric("42"));
+    assertTrue(isNumeric("+1_2.4,4-"));
     assertTrue(isNumeric(" +-42_  1 , 2 . 3 eE "));
     //
     assertEquals("+-421,2.3eE", normValue(" +-42_  1 , 2 . 3 eE "));
@@ -46,7 +47,7 @@ class HikariEbeanDataSourcePoolTest {
     assertEquals(23, ((HikariEbeanDataSourcePool) external.dataSource()).status(true).maxSize());
 
     Object ds = external.dataSource().unwrap(null);
-    assertTrue(ds instanceof HikariDataSource);
+		assertInstanceOf(HikariDataSource.class, ds);
     assertEquals("ebean.external", ((HikariDataSource) ds).getPoolName());
 
     Connection con = external.dataSource().getConnection();
@@ -70,7 +71,7 @@ class HikariEbeanDataSourcePoolTest {
         .setMaxAgeMinutes(7);
     DataSource pool = DataSourceFactory.create("app", config);
 
-    assertTrue(pool instanceof HikariEbeanDataSourcePool);
+		assertInstanceOf(HikariEbeanDataSourcePool.class, pool);
     var p = (HikariEbeanDataSourcePool) pool;
     assertEquals("ebean.app", p.name());
     assertEquals("ebean.app", p.ds.getPoolName());
@@ -94,7 +95,7 @@ class HikariEbeanDataSourcePoolTest {
     assertEquals(31, hds.getMaximumPoolSize());
     assertEquals(7, hds.getMinimumIdle());
     Properties p = hds.getDataSourceProperties();
-    String s = p.entrySet().stream().sorted(Comparator.comparing(c->c.getKey().toString())).map(Object::toString).collect(joining("|"));
+    String s = p.entrySet().stream().sorted(Comparator.comparing(c->c.getKey().toString())).map(Object::toString).collect(Collectors.joining("|"));
     assertEquals("NETWORK_TIMEOUT=51000|NO_UPGRADE=true|RECOVER_TEST=true", s);
     assertEquals("select 1;\r\nselect 2", hds.getConnectionInitSql());
   }
@@ -178,7 +179,7 @@ class HikariEbeanDataSourcePoolTest {
 		assertEquals("jdbc:h2:mem:FooBazYum", System.getProperty("spring.datasource.ccbbaa.url"));
 
 		var db = DB.byName("CcBbAa");
-		assertEquals("HikariEbeanDataSourcePool(ds=HikariDataSource (ebean.CcBbAa))", db.dataSource().toString());
+		assertEquals("HikariEbeanDataSourcePool(HikariDataSource (ebean.CcBbAa))", db.dataSource().toString());
 		assertEquals("CcBbAa", db.name());
 		var ds = (HikariEbeanDataSourcePool) db.dataSource();
 		assertEquals("ebean.CcBbAa", ds.name());
@@ -213,7 +214,7 @@ class HikariEbeanDataSourcePoolTest {
 		// DatabaseFactory.create("db" or "")
 		ds = new HikariEbeanDataSourcePool("db", new DataSourceConfig(), fakeConfig);
 
-		assertEquals("HikariEbeanDataSourcePool(ds=HikariDataSource (ebean))", ds.toString());
+		assertEquals("HikariEbeanDataSourcePool(HikariDataSource (ebean))", ds.toString());
 		assertEquals("ebean", ds.name());
 		assertEquals("jdbc:h2:mem:FooBazYum", ds.ds.getJdbcUrl());
 		assertEquals("myLogin", ds.ds.getUsername());
