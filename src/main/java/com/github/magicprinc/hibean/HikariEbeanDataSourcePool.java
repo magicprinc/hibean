@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
 
+import static com.github.magicprinc.hibean.HikariEbeanConnectionPoolFactory.autoCommitOverrideEbeanConfig;
 import static com.github.magicprinc.hibean.SmartConfig.alias;
 import static com.github.magicprinc.hibean.SmartConfig.normValue;
 import static com.github.magicprinc.hibean.SmartConfig.trim;
@@ -55,11 +56,6 @@ import static java.util.Objects.requireNonNullElseGet;
  */
 @Slf4j
 class HikariEbeanDataSourcePool extends HikariEbeanDataSourceWrapper {
-	/**
-	 By default, Ebean pool autoCommit == false.
-	 It can be overridden in config or globally here (if not null).
-	 */
-	public static Boolean autoCommitOverrideEbeanConfig = null;
 
   public HikariEbeanDataSourcePool (String callerPoolName, DataSourceConfig config, Map<String,String> avajeConfig) {
 		val cfg = SmartConfig.of(avajeConfig);// System.properties overwrite file.properties
