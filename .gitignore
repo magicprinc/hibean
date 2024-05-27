@@ -114,3 +114,6 @@ ignite/
 .env
 
 ### Your Application specifics
+/db-create-all.sql
+/db-drop-all.sql
+/fooBarZoo-create-all.sql
