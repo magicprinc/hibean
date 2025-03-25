@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.StreamSupport;
 
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.*;
@@ -123,5 +124,41 @@ public class SmartConfigTest {
 		Map<String,String> alias = SmartConfig.alias();
 		assertEquals(5, alias.size());
 		assertEquals("jdbcUrl", alias.get("url"));
+	}
+
+	@Test
+	void _opt () {
+		PROPERTIES.clear();
+		SmartConfig.propertyNames().forEach(k->assertFalse(k.contains("$tst.KEY!")));
+		assertEquals("", SmartConfig.opt("$tst.KEY!"));
+
+		PROPERTIES.put("$tst.KEY!", "");
+		assertTrue(StreamSupport.stream(SmartConfig.propertyNames().spliterator(),false).anyMatch(k->k.contains("$tst.KEY!")));
+		assertEquals("", SmartConfig.opt("$tst.KEY!"));
+
+		PROPERTIES.put("$tst.KEY!", " 42 ");
+		assertTrue(StreamSupport.stream(SmartConfig.propertyNames().spliterator(),false).anyMatch(k->k.contains("$tst.KEY!")));
+		assertEquals("42", SmartConfig.opt("$tst.KEY!"));
+		PROPERTIES.clear();
+	}
+
+	@Test
+	void _prefixes () {
+		PROPERTIES.clear();
+		System.getProperties().keySet().removeIf(k->k.toString().startsWith("ebean."));
+
+		PROPERTIES.put("ebean.hikari.prefix.d", "foo_%db%_bar");
+
+		List<String> list = SmartConfig.collectPrefixes();
+		assertEquals(5, list.size());
+		assertEquals("[spring.datasource.%db%hikari., spring.datasource.%db%, datasource.%db%, foo_%db%_bar, %db%]", list.toString());
+		PROPERTIES.clear();
+	}
+
+	@Test
+	void _normValue () {
+		assertEquals("", SmartConfig.normValue(null));
+		assertEquals("", SmartConfig.normValue(""));
+		assertEquals("+420", SmartConfig.normValue(" +4_2 0 \r"));
 	}
 }
