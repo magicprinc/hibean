@@ -3,4 +3,4 @@ jdk:
 
 install:
   - chmod +x gradlew
-  - ./gradlew clean build test -x sonarlintMain -x sonarlintTest --console=plain --continue --warning-mode all publishToMavenLocal
+  - ./gradlew clean build test --console=plain --continue --warning-mode all publishToMavenLocal
