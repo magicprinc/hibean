@@ -6,7 +6,7 @@ plugins {
 	alias(libs.plugins.lombok)
   alias(libs.plugins.ebean)
 
-  alias(libs.plugins.sonarlint)
+  //alias(libs.plugins.sonarlint)
   alias(libs.plugins.errorprone)
 }
 println "[INFO] ${project.group}:${project.name}:$version  ⇒  ${tasks.jar.archiveFileName.get()} # JVM: ${System.getProperty("java.version")}  Gradle: ${gradle.gradleVersion}"
@@ -33,8 +33,8 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 dependencies {
-  errorprone("com.google.errorprone:error_prone_core:latest.release")
-	compileOnly(libs.bundles.coreAnnotation)
+  errorprone("com.google.errorprone:error_prone_core:2.36.0")
+	compileOnly(libs.bundles.coreAnnotation, libs.jspecify)
 
   api("io.ebean:ebean:latest.release")
   api(libs.hikariCP)
@@ -48,7 +48,6 @@ dependencies {
   compileOnly libs.micrometerCore
 
 	// compileOnly("io.ebean:ebean-agent:latest.release") // fix old ebean-agent bug → upgrade IDEA plugin,
-
 
 	//*** TEST TEST TEST ***
 
@@ -122,10 +121,7 @@ test {
   systemProperty("user.language", "en")
   Locale.setDefault(new Locale("en", "US"));
 }
-sonarLint {
-  isGeneratedCodeIgnored = true
-  ignoreFailures = true
-}
+//sonarLint { isGeneratedCodeIgnored = true; ignoreFailures = true }
 lombok { version = "latest.release" }
 
 publishing { // https://docs.gradle.org/current/userguide/publishing_maven.html

@@ -10,16 +10,17 @@ import java.util.concurrent.ConcurrentMap;
 /**
  Universal Finder
 
+ @see FBeanRepository
+
  @see io.ebean.Finder
  @see io.ebean.Model
  @see jakarta.persistence.Entity
  */
 @SuppressWarnings({"PublicStaticCollectionField", "CollectionWithoutInitialCapacity", "rawtypes", "unchecked"})
 public interface FinderMixin<APPLIED_TO_CLAS> {
+	ConcurrentMap<Serializable,Finder> FINDER_CACHE = new ConcurrentHashMap<>();
 
-	ConcurrentMap<Serializable, Finder> FINDER_CACHE = new ConcurrentHashMap<>();
-
-	@SuppressWarnings({"InstanceofThis", "InstanceofIncompatibleInterface"})
+	@SuppressWarnings({"InstanceofThis"})
 	default <ID> Finder<ID,APPLIED_TO_CLAS> finder () {
 		String databaseName = this instanceof Model m
 				? m.db().name()
@@ -38,8 +39,10 @@ public interface FinderMixin<APPLIED_TO_CLAS> {
 
 	static <ID,T> Finder<ID,T> finder (Class<T> klass, String databaseName) {
 		return (Finder<ID,T>)(databaseName == null || databaseName.isEmpty() || "db".equals(databaseName)
-			? FINDER_CACHE.computeIfAbsent(klass, k -> new Finder(klass)) // default database
-			: FINDER_CACHE.computeIfAbsent(klass.getName()+':'+databaseName, k -> new Finder(klass, databaseName))
+			? FINDER_CACHE.computeIfAbsent(klass, k ->
+					new Finder(klass))// default database
+			: FINDER_CACHE.computeIfAbsent(klass.getName()+':'+databaseName, k ->
+					new Finder(klass, databaseName))
 		);
 	}
 }

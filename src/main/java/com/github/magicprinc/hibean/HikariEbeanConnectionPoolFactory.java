@@ -9,18 +9,19 @@ import lombok.Setter;
 /**
  HikariCP backed DataSourceFactory.
  It is service loaded → Do have only one implementation in ClassPath!
+
+ 🤖 resources/META-INF/services/io.ebean.datasource.DataSourceFactory
+
  @see DataSourceFactory
  @see HikariEbeanDataSourcePool
  @see java.util.ServiceLoader
  */
 public class HikariEbeanConnectionPoolFactory implements DataSourceFactory {
-
 	/**
 	 By default, Ebean pool autoCommit == false.
 	 It can be overridden in config or globally here (if not null).
 	 */
-	@Getter @Setter
-	static Boolean autoCommitOverrideEbeanConfig = null;
+	@Getter @Setter static Boolean autoCommitOverrideEbeanConfig = null;
 
   @Override
   public DataSourcePool createPool (String name, DataSourceConfig config) {

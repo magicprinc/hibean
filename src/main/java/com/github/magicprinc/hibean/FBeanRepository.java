@@ -5,13 +5,17 @@ import io.ebean.Database;
 import io.ebean.Finder;
 import io.ebean.Query;
 import io.ebean.UpdateQuery;
+import org.jspecify.annotations.NullMarked;
 
 /**
+ Template 👍
+
  @see BeanRepository
  @see io.ebean.Finder
- */
+ @see io.ebean.Model
+*/
+@NullMarked
 public abstract class FBeanRepository<ID,T> extends BeanRepository<ID,T> {
-
 	/**
 	 {@link BeanRepository} has all functionality, but with different method names. To make life easier...
 
@@ -40,20 +44,11 @@ public abstract class FBeanRepository<ID,T> extends BeanRepository<ID,T> {
 	public FBeanRepository (Class<T> type, Database database) {
 		super(type, database);
 		find = new Finder<>(type, database.name());
-	}
+	}//new
 
-	@Override
-	public UpdateQuery<T> updateQuery () {
-		return super.updateQuery();
-	}
+	@Override public UpdateQuery<T> updateQuery (){ return super.updateQuery(); }
 
-	@Override
-	public Query<T> query () {
-		return super.query();
-	}
+	@Override public Query<T> query (){ return super.query(); }
 
-	@Override
-	public Query<T> nativeSql (String nativeSql) {
-		return super.nativeSql(nativeSql);
-	}
+	@Override public Query<T> nativeSql (String nativeSql){ return super.nativeSql(nativeSql); }
 }

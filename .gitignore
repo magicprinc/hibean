@@ -48,6 +48,8 @@ out/
 .settings
 /classes/
 
+.vscode/
+
 # LOGs
 *.log
 logs/
@@ -82,6 +84,8 @@ tmp/
 
 *.sqlite*
 
+.codebuddy
+
 # The following files are generated/updated by vaadin-maven-plugin
 node_modules/
 frontend/generated/
@@ -110,7 +114,7 @@ generated_tests/
 ignite/
 !**/src/**/ignite/
 
-### в .env часто хранят пароли и токены = приватно 
+### в .env часто хранят пароли и токены = приватно
 .env
 
 ### Your Application specifics

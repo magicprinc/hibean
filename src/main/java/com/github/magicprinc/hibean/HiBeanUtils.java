@@ -11,8 +11,8 @@ import jakarta.persistence.PersistenceException;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import javax.sql.DataSource;
 
 /**
@@ -66,7 +66,6 @@ import javax.sql.DataSource;
  @see io.ebean.Database
  */
 public final class HiBeanUtils {
-
 	/**
 	 oracle, h2, postgres, mysql, sqlserver16, sqlserver17
 
@@ -75,8 +74,7 @@ public final class HiBeanUtils {
 	 @see io.ebean.config.dbplatform.DatabasePlatform
 	 @see io.ebean.platform.sqlserver.SqlServerPlatformProvider#create(Platform)
 	 */
-	@Getter @Setter
-	private static String databasePlatformName = "sqlserver16";
+	@Getter @Setter private static String databasePlatformName = "sqlserver17";
 
 	/**
 
@@ -87,16 +85,14 @@ public final class HiBeanUtils {
 	 @see DatabaseConfig#ddlCreateOnly(boolean)
 	 @see DatabaseConfig#runMigration(boolean)
 	 */
-	@Getter @Setter
-	private static boolean ddl = false;
-
+	@Getter @Setter private static boolean ddl = false;
 
 	public static Database database (
 		String ebeanDatabaseName,
 		@NonNull DataSource dataSource,
 		@Nullable CurrentUserProvider currentUserProvider
 	){
-		DatabaseConfig config = new DatabaseConfig();// config.loadFromProperties();
+		var config = new DatabaseConfig();// config.loadFromProperties();
 		config.dataSource(HikariEbeanDataSourceWrapper.wrap(dataSource));
 		config.register(true);// register in DB singleton too (in addition to Spring bean)
 
@@ -108,9 +104,8 @@ public final class HiBeanUtils {
 			config.defaultDatabase(false);
 		}
 
-		if (currentUserProvider != null){
-			config.currentUserProvider(currentUserProvider);
-		}
+		if (currentUserProvider != null)
+				config.currentUserProvider(currentUserProvider);
 
 		if (ddl){
 			config.ddlGenerate(true);

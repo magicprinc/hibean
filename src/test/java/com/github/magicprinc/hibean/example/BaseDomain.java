@@ -27,6 +27,7 @@ import lombok.experimental.Accessors;
  @see jakarta.validation.constraints.NotNull
 
  @see javax.annotation.Nullable
+ @see org.jspecify.annotations.Nullable
  @see jakarta.annotation.Nullable
  */
 @MappedSuperclass

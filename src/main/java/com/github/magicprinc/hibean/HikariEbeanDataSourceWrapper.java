@@ -6,6 +6,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariPoolMXBean;
 import com.zaxxer.hikari.metrics.micrometer.MicrometerMetricsTracker;
 import com.zaxxer.hikari.pool.HikariPool;
+import io.ebean.config.CurrentUserProvider;
 import io.ebean.config.DatabaseConfig;
 import io.ebean.datasource.DataSourceConfig;
 import io.ebean.datasource.DataSourcePool;
@@ -42,6 +43,8 @@ import java.util.logging.Logger;
   spring.datasource.hikari.data-source-properties.cachePrepStmts=true
  }</pre>
 
+ @see com.github.magicprinc.hibean.HiBeanUtils#database(String, DataSource, CurrentUserProvider)
+
  @see io.ebean.datasource.pool.ConnectionPool#ConnectionPool(String, DataSourceConfig)
  @see DataSourceConfig
  @see DataSourceConfig#loadSettings(io.ebean.datasource.ConfigPropertiesHelper)
@@ -70,16 +73,14 @@ public class HikariEbeanDataSourceWrapper implements DataSourcePool {
 	Boolean connectionAutoCommitOverride = null;
 
 	public static DataSource wrap (DataSource dataSource) {
-		if (dataSource instanceof HikariEbeanDataSourceWrapper){
-			return dataSource;
-		}
+		if (dataSource instanceof HikariEbeanDataSourceWrapper)
+				return dataSource;
 
 		if (dataSource instanceof HikariDataSource hikariDataSource){
 			val wrapper = new HikariEbeanDataSourceWrapper(hikariDataSource);
 
-			if (hikariDataSource.isAutoCommit()){
-				wrapper.connectionAutoCommitOverride(false);// fix default Spring HikariDataSource autoCommit==true to false
-			}
+			if (hikariDataSource.isAutoCommit())
+					wrapper.connectionAutoCommitOverride(false);// fix default Spring HikariDataSource autoCommit==true to false
 
 			return wrapper;
 		}
@@ -87,10 +88,7 @@ public class HikariEbeanDataSourceWrapper implements DataSourcePool {
 		return dataSource;
 	}
 
-  @Override
-	public String name () {
-		return ds.getPoolName();
-	}
+  @Override public String name (){ return ds.getPoolName(); }
 
   @Override
 	public int size () {
@@ -98,37 +96,21 @@ public class HikariEbeanDataSourceWrapper implements DataSourcePool {
     return hPool.getTotalConnections();
   }
 
-  @Override public boolean isAutoCommit () {
-		if (connectionAutoCommitOverride != null){
-			return connectionAutoCommitOverride;
-		}
-		return ds.isAutoCommit();
+  @Override
+	public boolean isAutoCommit () {
+		return connectionAutoCommitOverride != null ? connectionAutoCommitOverride
+				: ds.isAutoCommit();
 	}
 
-  @Override
-	public boolean isOnline () {
-    return ds.isRunning() && !ds.isClosed();
-  }
+  @Override public boolean isOnline (){ return ds.isRunning() && !ds.isClosed(); }
 
-  @Override
-	public boolean isDataSourceUp () {
-    return isOnline();
-  }
+  @Override public boolean isDataSourceUp (){ return isOnline(); }
 
-  @Override
-	public void online () {
-    ds.getHikariPoolMXBean().resumePool();
-  }
+  @Override public void online (){ ds.getHikariPoolMXBean().resumePool(); }
 
-  @Override
-	public void offline () {
-    ds.getHikariPoolMXBean().suspendPool();
-  }
+  @Override public void offline (){ ds.getHikariPoolMXBean().suspendPool(); }
 
-  @Override
-	public void shutdown () {
-    ds.close();
-  }
+  @Override public void shutdown (){ ds.close(); }
 
   @Override
 	public PoolStatus status (boolean reset) {
@@ -136,65 +118,40 @@ public class HikariEbeanDataSourceWrapper implements DataSourcePool {
     HikariPoolMXBean pool = ds.getHikariPoolMXBean();
 
     return new PoolStatus(){
-      @Override public int minSize () {
-        return cfg.getMinimumIdle();
-      }
-      @Override public int maxSize () {
-        return cfg.getMaximumPoolSize();
-      }
-      @Override public int free () {
-        return pool.getIdleConnections();
-      }
-      @Override public int busy () {
-        return pool.getActiveConnections();
-      }
-      @Override public int waiting () {
-        return pool.getThreadsAwaitingConnection();
-      }
+      @Override public int minSize (){ return cfg.getMinimumIdle(); }
+      @Override public int maxSize (){ return cfg.getMaximumPoolSize(); }
+      @Override public int free (){ return pool.getIdleConnections(); }
+      @Override public int busy (){ return pool.getActiveConnections(); }
+      @Override public int waiting (){ return pool.getThreadsAwaitingConnection(); }
       /** todo {@link MicrometerMetricsTracker} */
       @Override public int highWaterMark () {
         return pool.getActiveConnections();
       }
-      @Override public int waitCount () {
-        return 0;
-      }
-      @Override public int hitCount () {
-        return 0;
-      }
-			@Override public long maxAcquireMicros () {
-				return 0;
-			}
+      @Override public int waitCount (){ return 0; }
+      @Override public int hitCount (){ return 0; }
+			@Override public long maxAcquireMicros (){ return 0; }
 			/** todo {@link MicrometerMetricsTracker} */
-			@Override public long meanAcquireNanos () {
-				return 0;
-			}
+			@Override public long meanAcquireNanos (){ return 0; }
 		};
   }
 
-  @Override public SQLException dataSourceDownReason () { return null; }
+  @Override public SQLException dataSourceDownReason (){ return null; }
 
-  @Override public void setMaxSize (int max) {
+  @Override
+	public void setMaxSize (int max) {
     HikariConfigMXBean cfg = ds.getHikariConfigMXBean();
     cfg.setMaximumPoolSize(max);
   }
-
-  /** @deprecated see {@link DataSourcePool#setWarningSize(int)} */
-  @Deprecated @Override public void setWarningSize (int warningSize) {
-    // 1. Deprecated 2. No similar functionality in Hikari
-  }
-
-  /** @deprecated see {@link DataSourcePool#getWarningSize()} */
-  @Deprecated @Override public int getWarningSize (){ return 0; }
-
 
   @Override
 	public Connection getConnection () throws SQLException {
 		Connection con = ds.getConnection();
 
-		if (connectionAutoCommitOverride != null && connectionAutoCommitOverride != con.getAutoCommit()){
+		if (connectionAutoCommitOverride != null
+			&& connectionAutoCommitOverride != con.getAutoCommit()
+		){
 			con.setAutoCommit(connectionAutoCommitOverride);
 		}
-
 		return con;
 	}
 
@@ -202,73 +159,57 @@ public class HikariEbeanDataSourceWrapper implements DataSourcePool {
 	public Connection getConnection (String username, String password) throws SQLException {
 		Connection con = ds.getConnection(username, password);
 
-		if (connectionAutoCommitOverride != null && connectionAutoCommitOverride != con.getAutoCommit()){
+		if (connectionAutoCommitOverride != null
+			&& connectionAutoCommitOverride != con.getAutoCommit()
+		){
 			con.setAutoCommit(connectionAutoCommitOverride);
 		}
-
 		return con;
   }
 
-  @Override public PrintWriter getLogWriter () throws SQLException {
-    return ds.getLogWriter();
-  }
+  @Override public PrintWriter getLogWriter () throws SQLException { return ds.getLogWriter(); }
 
-  @Override public void setLogWriter (PrintWriter out) throws SQLException {
-    ds.setLogWriter(out);
-  }
+  @Override public void setLogWriter (PrintWriter out) throws SQLException { ds.setLogWriter(out); }
 
-  @Override public void setLoginTimeout (int seconds) throws SQLException {
-    ds.setLoginTimeout(seconds);
-  }
+  @Override public void setLoginTimeout (int seconds) throws SQLException { ds.setLoginTimeout(seconds); }
 
-  @Override public int getLoginTimeout () throws SQLException {
-    return ds.getLoginTimeout();
-  }
+  @Override public int getLoginTimeout () throws SQLException { return ds.getLoginTimeout(); }
 
-  @Override public Logger getParentLogger () throws SQLFeatureNotSupportedException {
-    return ds.getParentLogger();
-  }
+  @Override public Logger getParentLogger () throws SQLFeatureNotSupportedException { return ds.getParentLogger(); }
 
-  @SuppressWarnings("unchecked") @Override
+	@Override  @SuppressWarnings("unchecked")
   public <T> T unwrap (Class<T> iface) throws SQLException {
-    if (iface == null || iface == HikariDataSource.class || iface == HikariConfig.class){
-      return (T) ds;
-    }
+    if (iface == null || iface == HikariDataSource.class || iface == HikariConfig.class)
+	      return (T) ds;
 
-		if (iface == HikariEbeanDataSourceWrapper.class){
-			return (T) this;
-		}
+		if (iface == HikariEbeanDataSourceWrapper.class)
+				return (T) this;
 
     if (DataSource.class.equals(iface)){
-      HikariPool p = (HikariPool) ds.getHikariPoolMXBean();// hack!
+      val p = (HikariPool) ds.getHikariPoolMXBean();// hack!
       return (T) p.getUnwrappedDataSource();
     }
 
     return ds.unwrap(iface);
   }
 
-  @Override public boolean isWrapperFor (Class<?> iface) throws SQLException {
-		if (iface == null || iface == HikariDataSource.class || iface == HikariConfig.class){
-			return true;
-		}
-    return ds.isWrapperFor(iface);
+  @Override
+	public boolean isWrapperFor (Class<?> iface) throws SQLException {
+		if (iface == null || iface == HikariDataSource.class || iface == HikariConfig.class)
+				return true;
+		else
+				return ds.isWrapperFor(iface);
   }
 
-	@Override
-	public String toString () {
-		return "HikariEbeanDataSourcePool("+ ds + ')';
-	}
+	@Override public String toString (){ return "HikariEbeanDataSourcePool("+ ds + ')'; }
 
 	@Override
 	public final boolean equals (Object o) {
 		if (this == o){ return true; }
-		if (!( o instanceof HikariEbeanDataSourceWrapper wrapper )){ return false; }
+		if (!(o instanceof HikariEbeanDataSourceWrapper wrapper)){ return false; }
 
 		return Objects.equals(ds, wrapper.ds);
 	}
 
-	@Override
-	public int hashCode () {
-		return Objects.hashCode(ds);
-	}
+	@Override public int hashCode (){ return Objects.hashCode(ds); }
 }

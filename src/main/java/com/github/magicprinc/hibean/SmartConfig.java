@@ -2,8 +2,8 @@ package com.github.magicprinc.hibean;
 
 import io.ebean.datasource.DataSourceConfig;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jspecify.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -21,10 +21,7 @@ import java.util.regex.Pattern;
  @see org.eclipse.microprofile.config.Config
  */
 interface SmartConfig {
-
-	/**
-	 Merge initial avaje Config properties with MicroProfile Config (if present)
-	 */
+	/** Merge initial avaje Config properties with MicroProfile Config (if present) */
 	static Map<String,String> of (Map<String,String> avajeConfig) {
 		try {
 			org.eclipse.microprofile.config.Config config = ConfigProvider.getConfig();
@@ -120,9 +117,8 @@ interface SmartConfig {
 			}
 			boolean numeric = Character.isSpaceChar(c) || Character.isWhitespace(c)
 				|| c == '+' || c == '-' || c == '.' || c == ',' || c == '_' || c == 'e' || c == 'E';
-			if (!numeric){
-				return false;
-			}
+			if (!numeric)
+					return false;
 		}
 		return digits > 0;
 	}
@@ -133,10 +129,8 @@ interface SmartConfig {
 		}
 		String s = Normalizer.normalize(value.toString(), Normalizer.Form.NFC);
 
-		if (isNumeric(s)){
-			return SPACE_AND_UNDERSCORE.matcher(s.trim().strip()).replaceAll("");
-		}
-		return s;
+		return isNumeric(s) ? SPACE_AND_UNDERSCORE.matcher(s.trim().strip()).replaceAll("")
+				: s;
 	}
 	Pattern SPACE_AND_UNDERSCORE = Pattern.compile("[\\s_]", Pattern.CASE_INSENSITIVE|Pattern.UNICODE_CHARACTER_CLASS);
 }
