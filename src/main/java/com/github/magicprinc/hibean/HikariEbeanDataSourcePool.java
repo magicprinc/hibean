@@ -100,11 +100,22 @@ class HikariEbeanDataSourcePool extends HikariEbeanDataSourceWrapper {
     val hc = new HikariConfig();
     hc.setPoolName(hikariPoolName);// helps to know poolName during init phase
     mergeFromDataSourceConfig(hc, config);//1.ebean
+		fixErrors(hc, dst);
     setTargetFromProperties(hc, dst);//2.hikari (overrides)
     ds = createDataSource(hc, hikariPoolName);
   }//new
 
-  protected HikariDataSource createDataSource (HikariConfig hc, String poolName){
+	private static void fixErrors (HikariConfig hc, Properties dst) {
+		dst.entrySet().removeIf(e->{
+			if (e == null || e.getKey() == null || e.getValue() == null){ return true; }
+			val key = e.getKey().toString();
+			val value = e.getValue().toString();
+			if (key.contains("dataSource") && value.contains("Hikari")){ return true; }
+			return false;
+		});
+	}
+
+	protected HikariDataSource createDataSource (HikariConfig hc, String poolName){
     try {// setupMonitoring
       hc.setMetricRegistry(Metrics.globalRegistry);
     } catch (Throwable ignore){}// no Micrometer in classPath; see also hikariConfig.setRegisterMbeans(true)

@@ -166,6 +166,7 @@ class HikariEbeanDataSourcePoolTest {
 
 	@Test
 	void testSpringCompatability () {
+		SmartConfigTest.PROPERTIES.clear();
 		// val prev = (Properties) System.getProperties().clone();
 		var s = """
 	spring.datasource.ccbbaa.type=com.zaxxer.hikari.HikariDataSource

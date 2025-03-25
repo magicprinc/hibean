@@ -122,7 +122,7 @@ public class SmartConfigTest {
 	@Test
 	void _alias () {
 		Map<String,String> alias = SmartConfig.alias();
-		assertEquals(5, alias.size());
+		assertEquals(6, alias.size());
 		assertEquals("jdbcUrl", alias.get("url"));
 	}
 
