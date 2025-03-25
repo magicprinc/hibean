@@ -1,73 +1,113 @@
 package com.github.magicprinc.hibean;
 
+import io.smallrye.config.AbstractLocationConfigSourceLoader;
+import io.smallrye.config.DotEnvConfigSourceProvider;
+import io.smallrye.config.PropertiesConfigSource;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.SmallRyeConfigProviderResolver;
+import io.smallrye.config.common.MapBackedConfigSource;
+import io.smallrye.config.source.yaml.YamlConfigSourceLoader;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.eclipse.microprofile.config.spi.ConfigSource;
+import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import javax.annotation.Nonnegative;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
+import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  @see SmartConfig */
-class SmartConfigTest {
+@Slf4j
+public class SmartConfigTest {
+	public static final ConcurrentMap<String,String> PROPERTIES = new ConcurrentHashMap<>();
+	static {
+		SmartConfigTest.configureSmallRyeConfig();
+	}
+
+	public static void configureSmallRyeConfig () {
+		val builder = new SmallRyeConfigBuilder()
+			.forClassLoader(Thread.currentThread().getContextClassLoader())
+			.addDefaultInterceptors()// e.g: io.smallrye.config.ExpressionConfigSourceInterceptor
+			.addDefaultSources()// EnvConfigSource, SysPropConfigSource, SmallRyeConfigBuilder#META_INF_MICROPROFILE_CONFIG_PROPERTIES = META-INF/microprofile-config.properties
+			.addPropertiesSources()
+			.addSystemSources()
+
+			.addDiscoveredConverters()
+			.addDiscoveredInterceptors()
+			.addDiscoveredSources()
+			.addDiscoveredSecretKeysHandlers()
+			//.addDiscoveredValidator() → явно выставляем сами, проверив, что создаётся (есть зависимости)
+			.addDiscoveredCustomizers()
+			.withSources(new DotEnvConfigSourceProvider())
+
+			.withSources(new CustomizedJPropertiesYamlConfigSourceLoader())
+			.withSources(JPropertiesConfigSourceProvider.of(250, "application.properties"))
+			.withSources(JPropertiesConfigSourceProvider.of(312, "application-test.properties"))
+
+			.withSources(JPropertiesConfigSourceProvider.of(260, "config/application.properties"))
+			.withSources(JPropertiesConfigSourceProvider.of(250, "application.properties"))
+			.withSources(JPropertiesConfigSourceProvider.of(312, "application-test.properties"))
+			.withSources(new MapBackedConfigSource("SmartConfigTest.PROPERTIES", PROPERTIES, 120, false){});
+		SmallRyeConfig config = builder.build();
+		val resolver = new SmallRyeConfigProviderResolver();
+		ConfigProviderResolver.setInstance(resolver);// replace existing (probably already initialized)
+		resolver.registerConfig(config, null);
+		//ConfigProviderResolver.instance().registerConfig(config, null);
+	}
+	static class JPropertiesConfigSourceProvider extends AbstractLocationConfigSourceLoader {
+		static final String[] EXTENSIONS_PROVIDER = {"properties", "conf"};
+		@Getter private static final JPropertiesConfigSourceProvider instance = new JPropertiesConfigSourceProvider();
+		public static List<ConfigSource> of (@Nonnegative int ordinal, @NonNull String location) {
+			try {
+				return getInstance().loadConfigSources(location, ordinal);
+			} catch (Throwable e){
+				log.warn("Can't read properties: {}", location, e);
+				return emptyList();
+			}
+		}
+		@Override protected String[] getFileExtensions (){ return EXTENSIONS_PROVIDER; }
+		@Override
+		protected ConfigSource loadConfigSource (URL url, int ordinal) throws IOException {
+			return new PropertiesConfigSource(url, ordinal);
+		}
+	}//JPropertiesConfigSourceProvider
+	public static class CustomizedJPropertiesYamlConfigSourceLoader extends YamlConfigSourceLoader implements ConfigSourceProvider {
+		@Override
+		public List<ConfigSource> getConfigSources (ClassLoader classLoader) {
+			val sources = new ArrayList<ConfigSource>(8);
+			sources.addAll(loadConfigSources(new String[]{"config/application.yaml", "config/application.yml"}, 266, classLoader));
+			sources.addAll(loadConfigSources(new String[]{"application.yaml", "application.yml"}, 256, classLoader));// "override" InClassPath 1) 255 2) CL only
+			sources.addAll(loadConfigSources(new String[]{"application-test.yaml", "application-test.yml"}, 316, classLoader));
+			// ➕ META-INF/microprofile-config.y[a]ml в InClassPath @ 110
+			return sources;
+		}
+		@Override public String toString (){ return "YamlConfigSourceProvider"+getConfigSources(null); }
+	}//CustomizedJPropertiesYamlConfigSourceLoader
 	@Test
 	void sysEnv () {
-		var ebeanConfig = new LinkedHashMap<String,String>();
-		ebeanConfig.put("a", "111");
-		ebeanConfig.put("foo.bar.Zoo", " xXx ");
-		var cfg = SmartConfig.of(ebeanConfig);
+		SmartConfigTest.PROPERTIES.put("a", "111");
+		SmartConfigTest.PROPERTIES.put("foo.bar.Zoo", " xXx ");
 		//System.out.println(cfg.getPropertyNames());
 
-		assertEquals(2, cfg.size());
-		assertEquals("111", cfg.get("a"));
-		assertEquals(" xXx ", cfg.get("foo.bar.Zoo"));
-		assertEquals("{a=111, foo.bar.Zoo= xXx }", cfg.toString());
+		assertEquals("111", SmartConfig.opt("a"));
+		assertEquals("xXx", SmartConfig.opt("foo.bar.Zoo"));
 
-		assertEquals(" Zzz ", cfg.getOrDefault(" ---Xzzz."," Zzz "));
+		assertEquals(" Zzz ", SmartConfig.opt(" ---Xzzz."," Zzz "));
 	}
-
-	@Test
-	void _asProperties () {
-		var ebeanConfig = SmartConfig.asProperties();
-		ebeanConfig.put("a", "111");
-		ebeanConfig.put("foo.bar.Zoo", " xXx ");
-		var cfg = SmartConfig.of(ebeanConfig);
-		//System.out.println(cfg.getPropertyNames());
-
-		assertTrue(cfg.size() > 10);
-		assertEquals("111", cfg.get("a"));
-		assertEquals(" xXx ", cfg.get("foo.bar.Zoo"));
-		assertTrue(Objects.requireNonNull(cfg.get("java.version")).length() > 3);
-		assertFalse(Objects.requireNonNull(cfg.get(System.getenv().keySet().iterator().next())).isEmpty());
-		assertTrue(cfg.toString().startsWith("{"));
-
-		assertEquals(" Zzz ", cfg.getOrDefault(" ---Xzzz."," Zzz "));
-	}
-
-	@Test
-	void create () {
-		assertInstanceOf(Map.class, SmartConfig.of(new HashMap<>()));
-	}
-
-//	@Test
-//	void microprofile () {
-//		var ebeanConfig = new Properties();
-//		ebeanConfig.setProperty("a", "111");
-//		ebeanConfig.setProperty("foo.bar.Zoo", " xXx ");
-//
-//		var cfg = new SmartConfig.SmartConfigMicroprofile(new SmallRyeConfigProviderResolver().getConfig(), ebeanConfig);
-//
-//		//System.out.println(cfg.getPropertyNames());
-//
-//		assertTrue(cfg.getPropertyNames().size() > 10);
-//		assertEquals("111", cfg.getProperty("a"));
-//		assertEquals(" xXx ", cfg.getProperty("foo.bar.Zoo"));
-//		assertTrue(Objects.requireNonNull(cfg.getProperty("java.version")).length() > 3);
-//		assertFalse(Objects.requireNonNull(cfg.getProperty(System.getenv().keySet().iterator().next())).isEmpty());
-//		assertTrue(cfg.toString().startsWith("SmartConfigMicroprofile:io.smallrye.config.SmallRyeConfig@"));
-//	}
 
 	@Test
 	void _trim () {

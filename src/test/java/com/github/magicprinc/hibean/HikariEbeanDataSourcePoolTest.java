@@ -14,9 +14,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Properties;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static com.github.magicprinc.hibean.SmartConfig.isNumeric;
 import static com.github.magicprinc.hibean.SmartConfig.normValue;
@@ -28,6 +28,9 @@ import static org.junit.jupiter.api.Assertions.*;
  @see com.zaxxer.hikari.HikariConfig
  */
 class HikariEbeanDataSourcePoolTest {
+	static {
+		SmartConfigTest.configureSmallRyeConfig();
+	}
   @Test
 	void numeric () {
     assertFalse(isNumeric(""));
@@ -60,8 +63,9 @@ class HikariEbeanDataSourcePoolTest {
     con.close();
   }
 
-  @Test void testNoConfigFile () {
-    DataSourceConfig config = new DataSourceConfig()
+  @Test
+	void testNoConfigFile () {
+    val config = new DataSourceConfig()
         .setUrl("jdbc:h2:mem:tests7")
         .setUsername("foo")
         .setPassword("bar")
@@ -85,9 +89,13 @@ class HikariEbeanDataSourcePoolTest {
     p.shutdown();
   }
 
-  @Test void testMixProp () throws SQLException {
+  @Test
+	void testMixProp () throws SQLException {
+		SmartConfigTest.PROPERTIES.clear();
+		System.getProperties().keySet().removeIf(k->trim(k).startsWith("spring."));
+
     Database db = DB.byName("mix");
-    HikariEbeanDataSourcePool ds = (HikariEbeanDataSourcePool) db.dataSource();
+    val ds = (HikariEbeanDataSourcePool) db.dataSource();
     HikariDataSource hds = ds.unwrap(null);
     assertEquals(-1, hds.getInitializationFailTimeout());
     assertEquals("jdbc:h2:mem:testMix", hds.getJdbcUrl());
@@ -100,8 +108,8 @@ class HikariEbeanDataSourcePoolTest {
     assertEquals("select 1;\r\nselect 2", hds.getConnectionInitSql());
   }
 
-
-  @Test void testAnotherPrefix () {
+  @Test
+	void testAnotherPrefix () {
     try {
       System.setProperty("ebean.hikari.prefix", "spring.datasource.testAnotherPrefix.");
 
@@ -177,6 +185,12 @@ class HikariEbeanDataSourcePoolTest {
 		}
 		assertEquals("10", System.getProperty("spring.datasource.ccbbaa.hikari.maximum-pool-size"));
 		assertEquals("jdbc:h2:mem:FooBazYum", System.getProperty("spring.datasource.ccbbaa.url"));
+		assertEquals("10", SmartConfig.opt("spring.datasource.ccbbaa.hikari.maximum-pool-size"));
+		assertEquals("jdbc:h2:mem:FooBazYum", SmartConfig.opt("spring.datasource.ccbbaa.url"));
+		SmartConfig.propertyNames().forEach(x->{
+			if (trim(x).toLowerCase().contains("spring.datasource.")){ System.out.println(x); }
+		});
+		assertTrue(StreamSupport.stream(SmartConfig.MICROPROFILE_CONFIG.getPropertyNames().spliterator(),false).anyMatch(x->x.startsWith("spring.datasource.ccbbaa.")));
 
 		var db = DB.byName("CcBbAa");
 		assertEquals("HikariEbeanDataSourcePool(HikariDataSource (ebean.CcBbAa))", db.dataSource().toString());
@@ -198,28 +212,28 @@ class HikariEbeanDataSourcePoolTest {
 		assertNull(ds.ds.getDataSourceClassName());
 		assertNull(ds.ds.getDriverClassName());
 
-
 		// "default" We can't replace the already created, but we can check how it could be
-		var fakeConfig = new HashMap<String,String>(42);
 		System.getProperties().forEach((key, value)->{
 			var propertyName = trim(key);
 			if (propertyName.startsWith("spring.datasource.ccbbaa.")){
 				propertyName = propertyName.replace(".ccbbaa", "");
-				fakeConfig.put(propertyName, value.toString());
+				SmartConfigTest.PROPERTIES.put(propertyName, value.toString());
 			}
 		});
-		assertEquals("10", fakeConfig.get("spring.datasource.hikari.maximum-pool-size"));
-		assertEquals("jdbc:h2:mem:FooBazYum", fakeConfig.get("spring.datasource.url"));
+		assertEquals("10", SmartConfigTest.PROPERTIES.get("spring.datasource.hikari.maximum-pool-size"));
+		assertEquals("jdbc:h2:mem:FooBazYum", SmartConfigTest.PROPERTIES.get("spring.datasource.url"));
+		assertEquals("10", SmartConfig.opt("spring.datasource.hikari.maximum-pool-size"));
+		assertEquals("jdbc:h2:mem:FooBazYum", SmartConfig.opt("spring.datasource.url"));
 
 		// DatabaseFactory.create("db" or "")
-		ds = new HikariEbeanDataSourcePool("db", new DataSourceConfig(), fakeConfig);
+		ds = new HikariEbeanDataSourcePool("db", new DataSourceConfig());
 
 		assertEquals("HikariEbeanDataSourcePool(HikariDataSource (ebean))", ds.toString());
 		assertEquals("ebean", ds.name());
 		assertEquals("jdbc:h2:mem:FooBazYum", ds.ds.getJdbcUrl());
 		assertEquals("myLogin", ds.ds.getUsername());
 		assertEquals("mySecret", ds.ds.getPassword());
-		assertEquals(10, ds.ds.getMaximumPoolSize());
+		assertEquals(31, ds.ds.getMaximumPoolSize());
 		assertEquals(30_000, ds.ds.getConnectionTimeout());
 		assertEquals("{DB_CLOSE_ON_EXIT=true, NETWORK_TIMEOUT=42}", ds.ds.getDataSourceProperties().toString());
 		assertNull(ds.ds.getDataSource());

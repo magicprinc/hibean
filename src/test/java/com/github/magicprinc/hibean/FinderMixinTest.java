@@ -3,6 +3,7 @@ package com.github.magicprinc.hibean;
 import com.github.magicprinc.hibean.example.Smmo;
 import io.ebean.DB;
 import io.ebean.Model;
+import lombok.val;
 import org.apiguardian.api.API;
 import org.jeasy.random.EasyRandom;
 import org.jeasy.random.EasyRandomParameters;
@@ -12,10 +13,13 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- @see FinderMixin
+ @see FBeanRepository
  @see io.ebean.Finder
 */
 public class FinderMixinTest {
+	static {
+		SmartConfigTest.configureSmallRyeConfig();
+	}
 
 	@API(status = API.Status.INTERNAL)
 	private static final class Example<ID,X> extends Model {
@@ -43,25 +47,24 @@ public class FinderMixinTest {
 
 	@Test
 	void _smmo () {
-		EasyRandomParameters parameters = new EasyRandomParameters()
+		val parameters = new EasyRandomParameters()
 			.bypassSetters(true)
 			.excludeField(FieldPredicates.named("_ebean_.*"))
 			.excludeField(FieldPredicates.named("smmoId"))// autoinc column × smmo.setSmmoId(null)
 			.excludeField(FieldPredicates.named("_\\$.*"));
-		var r = new EasyRandom(parameters);// Instancio
+		val r = new EasyRandom(parameters);// Instancio
 
 		for (int i=0; i<100; i++){
 			var smmo = r.nextObject(Smmo.class);
 			assertEquals("db", smmo.db().name());
 			DB.save(smmo);
 		}
-		assertEquals(100, FinderMixin.finder(Smmo.class).query().findCount());
+		assertEquals(100, Smmo.FINDER.query().findCount());
 
-		Smmo.FIND.all().forEach(mo->{
+		Smmo.FINDER.all().forEach(mo->{
 			assertTrue(mo.pid() >= 0 && mo.pid() < 255);
-			if (mo.smmoId() % 20 == 1){
-				System.out.println(mo);// some examples
-			}
+			if (mo.smmoId() % 20 == 1)
+					System.out.println(mo);// some examples
 		});
 	}
 }

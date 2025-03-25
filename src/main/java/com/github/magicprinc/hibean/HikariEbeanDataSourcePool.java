@@ -25,7 +25,11 @@ import java.util.function.LongConsumer;
 
 import static com.github.magicprinc.hibean.HikariEbeanConnectionPoolFactory.autoCommitOverrideEbeanConfig;
 import static com.github.magicprinc.hibean.SmartConfig.alias;
+import static com.github.magicprinc.hibean.SmartConfig.collectPrefixes;
+import static com.github.magicprinc.hibean.SmartConfig.determineDefaultServerName;
+import static com.github.magicprinc.hibean.SmartConfig.makeDatabaseNamePrefix;
 import static com.github.magicprinc.hibean.SmartConfig.normValue;
+import static com.github.magicprinc.hibean.SmartConfig.opt;
 import static com.github.magicprinc.hibean.SmartConfig.trim;
 import static io.ebean.util.CamelCaseHelper.toCamelFromUnderscore;
 import static java.util.Objects.requireNonNullElseGet;
@@ -54,37 +58,37 @@ import static java.util.Objects.requireNonNullElseGet;
 
  @author a.fink
  */
+@SuppressWarnings("UseOfPropertiesAsHashtable")
 @Slf4j
 class HikariEbeanDataSourcePool extends HikariEbeanDataSourceWrapper {
-
-  public HikariEbeanDataSourcePool (String callerPoolName, DataSourceConfig config, Map<String,String> avajeConfig) {
-		val cfg = SmartConfig.of(avajeConfig);// System.properties overwrite file.properties
-
-		val defaultDatabaseName = determineDefaultServerName(cfg);// usually "db"
+	public HikariEbeanDataSourcePool (String callerPoolName, DataSourceConfig config) {
+		val defaultDatabaseName = determineDefaultServerName();// usually "db"
     val tmpTrimPoolName = trim(callerPoolName);
-    val hikariPoolName = tmpTrimPoolName.isEmpty() || tmpTrimPoolName.equals(defaultDatabaseName)
-				? "ebean"
+    val hikariPoolName = tmpTrimPoolName.isEmpty() || tmpTrimPoolName.equals(defaultDatabaseName) ? "ebean"
         : "ebean."+ tmpTrimPoolName;
-		val databaseName = makeDatabaseNamePrefix(tmpTrimPoolName, defaultDatabaseName, cfg);
+		val databaseName = makeDatabaseNamePrefix(tmpTrimPoolName, defaultDatabaseName);
 		Map<String,String> aliasMap = alias();
-    val prefixes = collectPrefixes(cfg);
+    val prefixes = collectPrefixes();
     val dst = new Properties(127);
 
     //1. search settings with our db_name
-    filter(aliasMap, cfg, dst, databaseName, prefixes, defaultDatabaseName);
-    //2. use settings of another db_name
-    String copyFromDb = trim(dst.getProperty("copyFrom"));
-    if (!copyFromDb.isEmpty()){// useful in tests: ^ workaround for main/test settings collisions
-			log.debug("EbeanPool '{}' with database name '{}' USES settings from '{}'", hikariPoolName, databaseName, copyFromDb);
-      dst.clear();// mix of main and test configs
-      filter(aliasMap, cfg, dst, copyFromDb, prefixes, defaultDatabaseName);
-    }
-		//3. add settings from "template" db_name. They override our own settings!
-		for (var db : trim(dst.getProperty("appendFrom")).split("[;,]")){// add settings from another DBs
+    filter(aliasMap, dst, databaseName, prefixes, defaultDatabaseName);
+    //2. use also settings of another db_name
+		for (var db : trim(dst.getProperty("copyFrom")).split("[;,]")){
 			db = trim(db);
 			if (!db.isEmpty()){
-				log.debug("EbeanPool '{}' with database name '{}' append settings from '{}'", hikariPoolName, databaseName, db);
-				filter(aliasMap, cfg, dst, db, prefixes, defaultDatabaseName);
+				log.debug("EbeanPool '{}' with database name '{}' also USES settings from '{}'", hikariPoolName, databaseName, db);
+				val tmp = new Properties(127);
+    	  filter(aliasMap, tmp, db, prefixes, defaultDatabaseName);
+				tmp.forEach(dst::putIfAbsent);
+			}
+    }
+		//3. add settings from another "template" db_name. They override our own settings!
+		for (var db : trim(dst.getProperty("appendFrom")).split("[;,]")){
+			db = trim(db);
+			if (!db.isEmpty()){
+				log.debug("EbeanPool '{}' with database name '{}' appends-over settings from '{}'", hikariPoolName, databaseName, db);
+				filter(aliasMap, dst, db, prefixes, defaultDatabaseName);
 			}
 		}
 		//4. load from another <hikari>.properties file == full delegation!
@@ -93,7 +97,7 @@ class HikariEbeanDataSourcePool extends HikariEbeanDataSourceWrapper {
 			ds = createDataSource(new HikariConfig(confFile), hikariPoolName);
 			return;
 		}
-    HikariConfig hc = new HikariConfig();
+    val hc = new HikariConfig();
     hc.setPoolName(hikariPoolName);// helps to know poolName during init phase
     mergeFromDataSourceConfig(hc, config);//1.ebean
     setTargetFromProperties(hc, dst);//2.hikari (overrides)
@@ -106,45 +110,6 @@ class HikariEbeanDataSourcePool extends HikariEbeanDataSourceWrapper {
     } catch (Throwable ignore){}// no Micrometer in classPath; see also hikariConfig.setRegisterMbeans(true)
     hc.setPoolName(poolName);
     return new HikariDataSource(hc);
-  }
-
-  /** Default database has no name: "". What prefix should we use in config to filter/find its settings (default: db.)
-   If you choose empty "" name: it will disable "db_name.property_name" keys. */
-  private static String makeDatabaseNamePrefix (String trimCallerPoolName, String defaultDatabaseName, Map<String,String> cfg){
-    if (trimCallerPoolName.isEmpty() || trimCallerPoolName.equals(defaultDatabaseName)){// default database
-			String db = cfg.getOrDefault("ebean.hikari.defaultdb",
-					cfg.getOrDefault("ebean.hikari.default-db",
-							cfg.get("ebean.hikari.defaultDb")));
-
-			if (db == null){
-				return defaultDatabaseName +'.';// default prefix for default database (usually db)
-			} else {
-				db = trim(db);
-				return db.isEmpty() ? ""
-						: db +'.';
-			}
-    } else {// named database e.g: my-DB_Name
-      return trimCallerPoolName +'.';//e.g: my-db_name.
-    }
-  }
-
-  /**
-   * Determine and return the default server name checking system environment variables and then global properties.
-   * @see io.ebean.DbPrimary#determineDefaultServerName
-   */
-  private static String determineDefaultServerName (Map<String,String> cfg) {
-    String defaultServerName = trim(System.getProperty("ebean_db", System.getenv("EBEAN_DB")));
-		if (!defaultServerName.isEmpty()){
-			return defaultServerName;
-		}
-
-    defaultServerName = cfg.get("datasource.default");
-    if (trim(defaultServerName).isEmpty()){
-    	defaultServerName = cfg.get("ebean.default.datasource");
-    }
-
-    return defaultServerName == null ? "db"
-     	 : trim(defaultServerName);
   }
 
   /**
@@ -173,19 +138,18 @@ class HikariEbeanDataSourcePool extends HikariEbeanDataSourceWrapper {
       }//else: HikariConfig.setter
       String javaPropertyName = toCamelFromUnderscore(key.replace('-', '_'));// spring.boot-key_fmt
       boolean success = setProperty(hc, javaPropertyName, value, methods);
-      if (!success && !javaPropertyName.equals(key)){// fallback to property_name as-is
-				setProperty(hc, key, value, methods);
-			}
+      if (!success && !javaPropertyName.equals(key))// fallback to property_name as-is
+					setProperty(hc, key, value, methods);
     });
   }
   /** TO DO keep in sync with {@link PropertyElf#setProperty} */
   static boolean setProperty (Object target, String propName, Object propValue, List<Method> methods) {
     // use the english locale to avoid the infamous turkish locale bug
-    var methodName = "set" + propName.substring(0, 1).toUpperCase(Locale.ENGLISH) + propName.substring(1);
+    val methodName = "set" + propName.substring(0, 1).toUpperCase(Locale.ENGLISH) + propName.substring(1);
     var writeMethod = methods.stream().filter(m -> m.getName().equals(methodName) && m.getParameterCount() == 1).findFirst().orElse(null);
 
     if (writeMethod == null){
-      var methodName2 = "set" + propName.toUpperCase(Locale.ENGLISH);
+      val methodName2 = "set" + propName.toUpperCase(Locale.ENGLISH);
       writeMethod = methods.stream().filter(m -> m.getName().equals(methodName2) && m.getParameterCount() == 1).findFirst().orElse(null);
     }
 
@@ -259,47 +223,21 @@ class HikariEbeanDataSourcePool extends HikariEbeanDataSourceWrapper {
       p.putAll(cp);
       hc.setDataSourceProperties(p);
     }
-    if (dsc.getInitSql() != null && !dsc.getInitSql().isEmpty()){
-      sets(String.join(";\r\n", dsc.getInitSql()), hc::setConnectionInitSql);
-    }
+    if (dsc.getInitSql() != null && !dsc.getInitSql().isEmpty())
+      	sets(String.join(";\r\n", dsc.getInitSql()), hc::setConnectionInitSql);
   }
-
   void sets (String dataSourceConfig, Consumer<String> setter){
     String s = trim(dataSourceConfig);
-    if ( !s.isEmpty() ){// e.g. driver can't be ""
-      setter.accept(s);
-    }
+    if (!s.isEmpty())//e.g: driver can't be ""
+	      setter.accept(s);
   }
   void seti (int dataSourceConfig, IntConsumer setter){
-    if ( dataSourceConfig > 0 ){
-      setter.accept(dataSourceConfig);
-    }
+    if (dataSourceConfig > 0)
+      	setter.accept(dataSourceConfig);
   }
   void setl (long dataSourceConfig, LongConsumer setter){
-    if ( dataSourceConfig > 0 ){
-      setter.accept(dataSourceConfig);
-    }
-  }
-
-  /** Prefixes to filter our (hikari) property names. Default: db. → datasource.db → spring.datasource.db.hikari. */
-  private static List<String> collectPrefixes (Map<String,String> cfg){
-    String[] p = new String[16];
-    p[1] = "%db%";
-    p[3] = "datasource.%db%";
-    p[5] = "spring.datasource.%db%hikari.";
-    p[7] = cfg.get("ebean.hikari.prefix");
-    p[9] = "spring.datasource.%db%";
-    // p[11] = "quarkus.datasource.%db%";
-
-    for (int i=0; i<p.length; i++){
-      String key = "ebean.hikari.prefix."+ Integer.toHexString(i);// .0..f
-      p[i] = trim(cfg.getOrDefault(key, p[i])).toLowerCase(Locale.ENGLISH);
-    }
-		return Arrays.stream(p)
-			.map(SmartConfig::trim)
-				.filter(pre->pre.length() > 1)
-				.sorted(Comparator.comparing(String::length).reversed())
-				.toList();
+    if (dataSourceConfig > 0)
+      	setter.accept(dataSourceConfig);
   }
 
   /**
@@ -312,14 +250,14 @@ class HikariEbeanDataSourcePool extends HikariEbeanDataSourceWrapper {
    *
    * }</pre>
    */
-  void filter (Map<String,String> aliasMap, Map<String,String> src, Properties dst, String dbName, List<String> prefixTemplates, String defaultDatabaseName){
+  void filter (Map<String,String> aliasMap, Properties dst, String dbName, List<String> prefixTemplates, String defaultDatabaseName){
     dbName = trim(dbName).toLowerCase(Locale.ENGLISH);// "", "db", "mycoolbase", "TooSmart."
     val db = dbName + (dbName.isEmpty() || dbName.endsWith(".") ? "" : ".");// "", "db.", "mycoolbase.", "toosmart."
 
 		final String[] prefixes;
 		// for default db we must generate both variants: spring.datasource.url and spring.datasource.db.url
 		if ((dbName.isEmpty() || dbName.equals(defaultDatabaseName) || dbName.equals(defaultDatabaseName+'.')) && !defaultDatabaseName.isEmpty()){
-			var set = new LinkedHashSet<String>(prefixTemplates.size() * 8 / 3 + 1);
+			val set = new LinkedHashSet<String>(prefixTemplates.size() * 8 / 3 + 1);
 
 			prefixTemplates.stream()
 				.map(pre->trim(pre).toLowerCase(Locale.ENGLISH).replace("%db%", ""))
@@ -342,34 +280,32 @@ class HikariEbeanDataSourcePool extends HikariEbeanDataSourceWrapper {
 				.sorted(Comparator.comparing(String::length).reversed())
 				.toArray(String[]::new);
 		}
-
 		// datasource.db.url [= jdbc:h2:mem:testMix]
-    for (val e : src.entrySet()){
-			String k = e.getKey().toLowerCase(Locale.ENGLISH);// fullKey
+    for (val verbatimConfKey : SmartConfig.propertyNames()){
+			val confKey = trim(verbatimConfKey).replace("\"", "");// SmallRyeConfig yaml key "foo.bar" becomes "\"foo.bar\""
+			String k = confKey.toLowerCase(Locale.ENGLISH);// fullKey
 
 			String propertyName = "";
 			for (String pre : prefixes){// 1) somedb. 2) datasource.somedb.  E.g.:  db., datasource.db.
 				if (k.startsWith(pre)){
-					propertyName = e.getKey().substring(pre.length());
+					propertyName = confKey.substring(pre.length());
 					k = k.substring(pre.length());
 					break;// found
 				}
 			}
-			if (propertyName.isEmpty()){
-				continue;// skip lines without prefix
-			}
+			if (propertyName.isEmpty())
+					continue;// skip lines without prefix
 
 			k = k.replace("-", "").replace("_", ""); // [datasource.db.] max-Connections → maxconnections
 			String alias = trim(aliasMap.get(k));
-			if (!alias.isEmpty()){
-				propertyName = alias; // e.g. url (ebean name) → jdbcUrl (hikari name)
-			}
+			if (!alias.isEmpty())
+					propertyName = alias; // e.g. url (ebean name) → jdbcUrl (hikari name)
 
-			if (e.getValue() != null){
-				dst.setProperty(propertyName, normValue(e.getValue()));
-			} else {
-				log.warn("filter: Config has property name {} without value @ {}.{}", e.getKey(), db, propertyName);
-			}
-		}
+			String confValue = opt(verbatimConfKey);
+			if (!confValue.isEmpty())
+					dst.setProperty(propertyName, normValue(confValue));
+			else
+					log.warn("filter: Config has property name {} without value @ {}.{}", verbatimConfKey, db, propertyName);
+		}//f
   }
 }

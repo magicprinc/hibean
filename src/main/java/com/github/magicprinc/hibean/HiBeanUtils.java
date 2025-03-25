@@ -3,6 +3,8 @@ package com.github.magicprinc.hibean;
 import io.ebean.Database;
 import io.ebean.DatabaseBuilder;
 import io.ebean.DatabaseFactory;
+import io.ebean.Finder;
+import io.ebean.Model;
 import io.ebean.annotation.Platform;
 import io.ebean.config.CurrentUserProvider;
 import io.ebean.config.DatabaseConfig;
@@ -53,6 +55,7 @@ import javax.sql.DataSource;
    databaseConfig.setExternalTransactionManager(new SpringJdbcTransactionManager());
  }</pre>
 
+ @see com.github.magicprinc.hibean.FBeanRepository
  @see io.ebean.BeanRepository
  @see io.ebean.annotation.Transactional
 
@@ -61,10 +64,10 @@ import javax.sql.DataSource;
  @see jakarta.persistence.Entity
  @see jakarta.persistence.Table
  @see io.ebean.Model
- @see FinderMixin
+ @see io.ebean.Finder
 
  @see io.ebean.Database
- */
+*/
 public final class HiBeanUtils {
 	/**
 	 oracle, h2, postgres, mysql, sqlserver16, sqlserver17
@@ -124,5 +127,13 @@ public final class HiBeanUtils {
 			config.databasePlatformName(databasePlatformName);
 			return DatabaseFactory.create(config);
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <ID,T extends Model> Finder<ID,T> finder (T model) {
+		return (Finder<ID,T>) new Finder<>(
+			model.getClass(),
+			model.db().name() // databaseName
+		);
 	}
 }

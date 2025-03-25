@@ -18,6 +18,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.jspecify.annotations.Nullable;
 
 import javax.sql.DataSource;
 import java.io.PrintWriter;
@@ -54,7 +55,7 @@ import java.util.logging.Logger;
  @author a.fink
  */
 @Slf4j
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PACKAGE)
 public class HikariEbeanDataSourceWrapper implements DataSourcePool {
   HikariDataSource ds;
 
@@ -68,9 +69,10 @@ public class HikariEbeanDataSourceWrapper implements DataSourcePool {
 	 • EbeanDataSourceWrapper autoCommit == false (as Ebean likes)
 
 	 null == don't override, use delegate DataSource setting
-	 */
+	 @see com.github.magicprinc.hibean.HikariEbeanConnectionPoolFactory#autoCommitOverrideEbeanConfig
+	*/
 	@Getter @Setter @Accessors(fluent = true, chain = true)
-	Boolean connectionAutoCommitOverride = null;
+	@Nullable Boolean connectionAutoCommitOverride = null;
 
 	public static DataSource wrap (DataSource dataSource) {
 		if (dataSource instanceof HikariEbeanDataSourceWrapper)

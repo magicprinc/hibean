@@ -1,7 +1,5 @@
 package com.github.magicprinc.hibean.example;
 
-
-import com.github.magicprinc.hibean.FinderMixin;
 import io.ebean.Finder;
 import io.ebean.Model;
 import jakarta.persistence.Column;
@@ -25,16 +23,15 @@ import java.time.LocalDateTime;
 @ParametersAreNullableByDefault
 // DON'T! @Data, @EqualsAndHashCode  See https://ebean.io/docs/best-practice/
 @Getter  @Setter
-@ToString(doNotUseGetters = true, callSuper = false) // avoid getters!
+@ToString(doNotUseGetters = true) // avoid getters! callSuper = false
 @NoArgsConstructor  @AllArgsConstructor
 @Accessors(fluent = true, chain = true) // instead of @Builder(toBuilder = true)
-public class Smmo extends Model implements FinderMixin<Smmo> {
-
-	public static final Finder<Long,Smmo> FIND = new Finder<>(Smmo.class);
+public class Smmo extends Model {
+	public static final Finder<Long,Smmo> FINDER = new Finder<>(Smmo.class);
 
 	public Smmo (String dbName) {
 		super(dbName);
-	}
+	}//new
 
 	@Id
 	@Column(name = "smmo_id")
@@ -52,62 +49,38 @@ public class Smmo extends Model implements FinderMixin<Smmo> {
 	@Column(name = "SvcType")
 	private String svcType;
 
-	@Column(name = "SrcTOA")
-	@Min(0) @Max(255)
-	private Short srcToa;
+	@Column(name = "SrcTOA") private @Min(0) @Max(255) Short srcToa;
 
 	@Column(name = "SrcAddr")
 	private String srcAddr;
 
-	@Column(name = "DstTOA")
-	@Min(0) @Max(255)
-	private Short dstToa;
+	@Column(name = "DstTOA") private @Min(0) @Max(255) Short dstToa;
 
 	@Column(name = "DstAddr")
 	private String dstAddr;
 
-	@Column(name = "Esm_Class")
-	@Min(0) @Max(255)
-	private Short esmClass;
+	@Column(name = "Esm_Class") private @Min(0) @Max(255) Short esmClass;
 
-	@Column(name = "PID")
-	@Min(0) @Max(255)
-	private Short pid;
+	@Column(name = "PID") private @Min(0) @Max(255) Short pid;
 
-	@Column(name = "Priority")
-	@Min(0) @Max(255)
-	private Short priority;
+	@Column(name = "Priority") private @Min(0) @Max(255) Short priority;
 
-	@Column(name = "RegDeliv")
-	@Min(0) @Max(255)
-	private Short regDeliv;
+	@Column(name = "RegDeliv") private @Min(0) @Max(255) Short regDeliv;
 
-	@Column(name = "DCS")
-	@Min(0) @Max(255)
-	private Short dcs;
+	@Column(name = "DCS") private @Min(0) @Max(255) Short dcs;
 
 	@Column(name = "SM")
 	private byte[] sm;
 
-	@Column(name = "sar_msg_ref_num")
-	@Min(0) @Max(255)
-	private Short sarMsgRefNum;
+	@Column(name = "sar_msg_ref_num") private @Min(0) @Max(255) Short sarMsgRefNum;
 
-	@Column(name = "sar_total_segments")
-	@Min(0) @Max(255)
-	private Short sarTotalSegments;
+	@Column(name = "sar_total_segments") private @Min(0) @Max(255) Short sarTotalSegments;
 
-	@Column(name = "sar_segment_seqnum")
-	@Min(0) @Max(255)
-	private Short sarSegmentSeqnum;
+	@Column(name = "sar_segment_seqnum") private @Min(0) @Max(255) Short sarSegmentSeqnum;
 
-	@Column(name = "SrcPort")
-	@Min(0) @Max(0x7F_FF)
-	private Integer srcPort;
+	@Column(name = "SrcPort") private @Min(0) @Max(0x7F_FF) Integer srcPort;
 
-	@Column(name = "DstPort")
-	@Min(0) @Max(0x7F_FF)
-	private Integer dstPort;
+	@Column(name = "DstPort") private @Min(0) @Max(0x7F_FF) Integer dstPort;
 
 	@Column(name = "Opt1")
 	private Integer opt1;

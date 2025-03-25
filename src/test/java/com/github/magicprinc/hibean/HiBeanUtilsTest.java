@@ -3,6 +3,7 @@ package com.github.magicprinc.hibean;
 import com.github.magicprinc.hibean.example.Smmo;
 import com.zaxxer.hikari.HikariDataSource;
 import io.ebean.DB;
+import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
@@ -12,9 +13,12 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  @see HiBeanUtils */
 class HiBeanUtilsTest {
+	static {
+		SmartConfigTest.configureSmallRyeConfig();
+	}
 	@Test
 	void basic () throws SQLException {
-		var springDataSource = new HikariDataSource();
+		val springDataSource = new HikariDataSource();
 		//springDataSource.setJdbcUrl("jdbc:sqlserver://127.0.0.1;databaseName=front;trustServerCertificate=true");
 		//springDataSource.setUsername("and password");
 		springDataSource.setJdbcUrl("jdbc:h2:mem:fooBarZooDb");
@@ -32,7 +36,7 @@ class HiBeanUtilsTest {
 			.dstAddr("1917393791")
 			.save();
 
-		var mo2 = mo.finder().query().where().eq("SrcAddr", "from").and().eq("dstAddr", "1917393791").findOne();
+		var mo2 = HiBeanUtils.finder(mo).query().where().eq("SrcAddr", "from").and().eq("dstAddr", "1917393791").findOne();
 		assertNotSame(mo, mo2);
 		assertEquals(mo, mo2);
 

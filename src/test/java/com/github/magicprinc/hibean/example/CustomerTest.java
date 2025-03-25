@@ -1,17 +1,17 @@
 package com.github.magicprinc.hibean.example;
 
 
-import com.github.magicprinc.hibean.FinderMixin;
+import com.github.magicprinc.hibean.SmartConfigTest;
 import io.ebean.DB;
 import io.ebean.datasource.DataSourceConfig;
 import io.ebean.util.CamelCaseHelper;
+import lombok.val;
 import org.junit.Test;
 
 import java.time.LocalDate;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
 
 /**
  https://github.com/ebean-orm-examples/example-springboot
@@ -22,10 +22,12 @@ import static org.junit.Assert.assertNotNull;
  @see DataSourceConfig#loadSettings(io.ebean.datasource.ConfigPropertiesHelper)
  */
 public class CustomerTest {
-
+	static {
+		SmartConfigTest.configureSmallRyeConfig();
+	}
   @Test
   public void saveAndFind() {
-    Customer customer = new Customer("Hello Rob");
+    val customer = new Customer("Hello Rob");
     customer.startDate(LocalDate.now())
 			.comments("What is this good for?");
 
@@ -39,18 +41,15 @@ public class CustomerTest {
     assertEquals(found.id(), customer.id());
     assertEquals(found.name(), customer.name());
 
-		Customer f1 = found.finder().query().where().idEq(customer.id()).findOne();
+		Customer f1 = found.finder.query().where().idEq(customer.id()).findOne();
 		assertNotNull(f1);
 		assertEquals(customer.id(), f1.id());
 		assertEquals(customer.name(), f1.name());
 
-		Customer f2 = FinderMixin.finder(Customer.class).query().where().idEq(customer.id()).findOne();
+		Customer f2 = Customer.finder.query().where().idEq(customer.id()).findOne();
 		assertNotNull(f2);
 		assertEquals(customer.id(), f2.id());
 		assertEquals(customer.name(), f2.name());
-
-		System.out.println(FinderMixin.FINDER_CACHE);
-		assertEquals(1, FinderMixin.FINDER_CACHE.size());
 	}
 
   @Test

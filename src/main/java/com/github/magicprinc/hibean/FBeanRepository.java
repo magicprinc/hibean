@@ -10,19 +10,30 @@ import org.jspecify.annotations.NullMarked;
 /**
  Template 👍
 
+ https://ebean.io/docs/best-practice/
+
+ Finder in a Model
+ <pre>{@code
+	 public static final Finder<ID,MODEL_CLAS> finder = new Finder<>(klass);// default database
+ }</pre>
+ <pre>{@code
+	 public static final Finder<ID,MODEL_CLAS> finder = new Finder<>(klass, databaseName);
+ }</pre>
+
  @see BeanRepository
  @see io.ebean.Finder
  @see io.ebean.Model
+ @see io.ebean.typequery.IQueryBean
 */
 @NullMarked
 public abstract class FBeanRepository<ID,T> extends BeanRepository<ID,T> {
 	/**
 	 {@link BeanRepository} has all functionality, but with different method names. To make life easier...
 
-	 Remember about Q‹class› e.g. QCustomer implements {@link io.ebean.typequery.TQRootBean}
+	 Remember about Q‹class› e.g. QCustomer implements {@link io.ebean.typequery.QueryBean}/{@link io.ebean.typequery.IQueryBean}
 
 	 @see io.ebean.Finder
-	 */
+	*/
 	public final Finder<ID,T> find;
 
 	/**

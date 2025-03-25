@@ -1,6 +1,6 @@
 package com.github.magicprinc.hibean.example;
 
-import com.github.magicprinc.hibean.FinderMixin;
+import io.ebean.Finder;
 import io.ebean.annotation.NotNull;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Lob;
@@ -22,13 +22,14 @@ import java.time.LocalDate;
 @NoArgsConstructor  @AllArgsConstructor
 @Accessors(fluent = true, chain = true) // instead of @Builder(toBuilder = true)
 @ParametersAreNullableByDefault
-public class Customer extends BaseDomain implements FinderMixin<Customer> {
-
+public class Customer extends BaseDomain {
   @NotNull String name;
   LocalDate startDate;
   @Lob String comments;
 
+	public static final Finder<Long,Customer> finder = new Finder<>(Customer.class);// default database
+
   public Customer (@NonNull String name) {
     this.name = name;
-  }
+  }//new
 }
