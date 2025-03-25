@@ -3,6 +3,7 @@ package com.github.magicprinc.hibean;
 import com.zaxxer.hikari.HikariDataSource;
 import io.ebean.DB;
 import io.ebean.Database;
+import io.ebean.SqlRow;
 import io.ebean.datasource.DataSourceConfig;
 import io.ebean.datasource.DataSourceFactory;
 import lombok.val;
@@ -249,5 +250,23 @@ class HikariEbeanDataSourcePoolTest {
 		assertNull(System.getProperty("spring.datasource.ccbbaa.url"));
 		assertNull(System.getProperty("spring.datasource.hikari.maximum-pool-size"));
 		assertNull(System.getProperty("spring.datasource.url"));
+	}
+
+	@Test
+	void _moreTests () throws SQLException {
+		Database db = DB.byName("moreTests");
+		val eds = (HikariEbeanDataSourcePool) db.dataSource();
+		HikariDataSource ds = eds.unwrap(HikariDataSource.class);
+		assertEquals("jdbc:h2:mem:moreTests", ds.getJdbcUrl());
+		assertEquals("sa", ds.getUsername());
+		assertNull(ds.getPassword());
+		assertEquals("ebean.moreTests", ds.getPoolName());
+		assertEquals("SELECT 2", ds.getConnectionTestQuery());
+		assertEquals(301000, ds.getConnectionTimeout());
+		assertEquals(32000, ds.getIdleTimeout());
+		assertEquals(27, ds.getMaximumPoolSize());
+
+		SqlRow row = db.sqlQuery("select 1 as AAa,2 as Bbb").findOne();
+		assertEquals("{aaa=1, bbb=2}", row.toString());
 	}
 }
