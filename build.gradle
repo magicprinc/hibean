@@ -34,7 +34,7 @@ tasks.withType(JavaCompile).configureEach {
 
 dependencies {
   errorprone("com.google.errorprone:error_prone_core:2.36.0")
-	compileOnly(libs.bundles.coreAnnotation, libs.jspecify)
+	compileOnly(libs.errorprone, libs.jspecify)
 
   api("io.ebean:ebean:latest.release")
   api(libs.hikariCP)
@@ -43,7 +43,8 @@ dependencies {
 	implementation(libs.jakarta.validationApi)
 	implementation(libs.slf4jApi, libs.slf4jJCL)
 
-	compileOnly("org.eclipse.microprofile.config:microprofile-config-api:latest.release")
+	implementation("org.eclipse.microprofile.config:microprofile-config-api:latest.release")
+	compileOnly(libs.smallryeConfig)
 
   compileOnly libs.micrometerCore
 
@@ -52,12 +53,10 @@ dependencies {
 	//*** TEST TEST TEST ***
 
 	testAnnotationProcessor("io.ebean:querybean-generator:latest.release") // vs: annotationProcessor
-	testImplementation(libs.bundles.coreAnnotation)
+	testImplementation(libs.bundles.coreAnnotation, libs.jspecify)
 
   testImplementation libs.bundles.junit
-	testImplementation(libs.testEasyRandom, libs.testEasyRandomValidation)
 	testImplementation("io.ebean:ebean-test:latest.release")
-
 
   testImplementation("io.ebean:ebean-querybean:latest.release")
 
@@ -71,13 +70,13 @@ dependencies {
 
 	testRuntimeOnly(libs.jdbc.h2, libs.jdbc.mssql)
 
-	testRuntimeOnly("org.eclipse.microprofile.config:microprofile-config-api:latest.release")
-	// testImplementation 'io.smallrye.config:smallrye-config:latest.release'
+	testImplementation(libs.smallryeConfig, libs.smallryeConfigSourceYaml)
 }
 
 configurations.configureEach { // .implementation ? https://tomgregory.com/how-to-exclude-gradle-dependencies/
   exclude group: 'io.ebean', module: 'ebean-datasource'
 
+	exclude group: 'io.avaje', module: 'avaje-lang'
 	exclude group: 'io.ebean', module: 'ebean-joda-time'
 
 	exclude group: 'io.ebean', module: 'ebean-platform-all'
@@ -119,7 +118,7 @@ test {
   systemProperty("file.encoding", "UTF-8")
 
   systemProperty("user.language", "en")
-  Locale.setDefault(new Locale("en", "US"));
+  Locale.setDefault(Locale.ENGLISH)
 }
 //sonarLint { isGeneratedCodeIgnored = true; ignoreFailures = true }
 lombok { version = "latest.release" }
