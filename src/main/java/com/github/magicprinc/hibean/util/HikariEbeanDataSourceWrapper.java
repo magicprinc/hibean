@@ -1,5 +1,6 @@
-package com.github.magicprinc.hibean;
+package com.github.magicprinc.hibean.util;
 
+import com.github.magicprinc.hibean.HikariEbeanConnectionPoolFactory;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariConfigMXBean;
 import com.zaxxer.hikari.HikariDataSource;
@@ -44,7 +45,7 @@ import java.util.logging.Logger;
   spring.datasource.hikari.data-source-properties.cachePrepStmts=true
  }</pre>
 
- @see com.github.magicprinc.hibean.HiBeanUtils#database(String, DataSource, CurrentUserProvider)
+ @see HiBeanUtils#database(String, DataSource, CurrentUserProvider)
 
  @see io.ebean.datasource.pool.ConnectionPool#ConnectionPool(String, DataSourceConfig)
  @see DataSourceConfig
@@ -57,9 +58,12 @@ import java.util.logging.Logger;
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class HikariEbeanDataSourceWrapper implements DataSourcePool {
-  HikariDataSource ds;
+  protected HikariDataSource ds;
 
 	public HikariEbeanDataSourceWrapper (HikariDataSource dataSource){ this.ds = dataSource; }//new
+
+	/** @see #unwrap(Class) */
+	public HikariDataSource getHikariDataSource (){ return ds; }
 
 	/**
 	 If wrapper is used with Spring DataSource, then one can have 2-in-1:

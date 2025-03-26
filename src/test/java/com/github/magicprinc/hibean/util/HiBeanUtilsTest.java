@@ -1,5 +1,6 @@
-package com.github.magicprinc.hibean;
+package com.github.magicprinc.hibean.util;
 
+import com.github.magicprinc.hibean.SmartConfigTest;
 import com.github.magicprinc.hibean.example.Smmo;
 import com.zaxxer.hikari.HikariDataSource;
 import io.ebean.DB;

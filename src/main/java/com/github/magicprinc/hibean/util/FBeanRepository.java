@@ -1,4 +1,4 @@
-package com.github.magicprinc.hibean;
+package com.github.magicprinc.hibean.util;
 
 import io.ebean.BeanRepository;
 import io.ebean.Database;

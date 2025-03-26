@@ -1,5 +1,6 @@
 package com.github.magicprinc.hibean;
 
+import com.github.magicprinc.hibean.util.HikariEbeanDataSourceWrapper;
 import io.ebean.datasource.DataSourceConfig;
 import io.ebean.datasource.DataSourceFactory;
 import io.ebean.datasource.DataSourcePool;
@@ -21,7 +22,7 @@ public class HikariEbeanConnectionPoolFactory implements DataSourceFactory {
 	/**
 	 By default, Ebean pool autoCommit == false.
 	 It can be overridden in config or globally here (if not null).
-	 @see com.github.magicprinc.hibean.HikariEbeanDataSourceWrapper#connectionAutoCommitOverride
+	 @see HikariEbeanDataSourceWrapper#connectionAutoCommitOverride
 	*/
 	@Getter @Setter static @Nullable Boolean autoCommitOverrideEbeanConfig = null;
 

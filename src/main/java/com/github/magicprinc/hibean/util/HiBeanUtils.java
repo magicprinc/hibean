@@ -1,4 +1,4 @@
-package com.github.magicprinc.hibean;
+package com.github.magicprinc.hibean.util;
 
 import io.ebean.Database;
 import io.ebean.DatabaseBuilder;
@@ -55,7 +55,7 @@ import javax.sql.DataSource;
    databaseConfig.setExternalTransactionManager(new SpringJdbcTransactionManager());
  }</pre>
 
- @see com.github.magicprinc.hibean.FBeanRepository
+ @see com.github.magicprinc.hibean.util.FBeanRepository
  @see io.ebean.BeanRepository
  @see io.ebean.annotation.Transactional
 

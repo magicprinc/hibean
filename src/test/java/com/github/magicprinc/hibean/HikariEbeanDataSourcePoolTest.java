@@ -79,14 +79,14 @@ class HikariEbeanDataSourcePoolTest {
 		assertInstanceOf(HikariEbeanDataSourcePool.class, pool);
     var p = (HikariEbeanDataSourcePool) pool;
     assertEquals("ebean.app", p.name());
-    assertEquals("ebean.app", p.ds.getPoolName());
-    assertEquals("jdbc:h2:mem:tests7", p.ds.getJdbcUrl());
-    assertEquals("foo", p.ds.getUsername());
-    assertEquals("bar", p.ds.getPassword());
-    assertFalse(p.ds.isAutoCommit());
-    assertEquals(51, p.ds.getMaximumPoolSize());
-    assertEquals(19, p.ds.getMinimumIdle());
-    assertEquals(7*60*1000, p.ds.getMaxLifetime());
+    assertEquals("ebean.app", p.getHikariDataSource().getPoolName());
+    assertEquals("jdbc:h2:mem:tests7", p.getHikariDataSource().getJdbcUrl());
+    assertEquals("foo", p.getHikariDataSource().getUsername());
+    assertEquals("bar", p.getHikariDataSource().getPassword());
+    assertFalse(p.getHikariDataSource().isAutoCommit());
+    assertEquals(51, p.getHikariDataSource().getMaximumPoolSize());
+    assertEquals(19, p.getHikariDataSource().getMinimumIdle());
+    assertEquals(7*60*1000, p.getHikariDataSource().getMaxLifetime());
     p.shutdown();
   }
 
@@ -116,21 +116,21 @@ class HikariEbeanDataSourcePoolTest {
 
       var db = DB.byName("test_spring");
       var pool = (HikariEbeanDataSourcePool) db.dataSource();
-      assertEquals("jdbc:h2:mem:fromSprng", pool.ds.getJdbcUrl());
-      assertEquals("ufoo", pool.ds.getUsername());
-      assertEquals("pbar", pool.ds.getPassword());
-      assertTrue(pool.ds.isReadOnly());
-      assertEquals(54321, pool.ds.getMaxLifetime());
+      assertEquals("jdbc:h2:mem:fromSprng", pool.getHikariDataSource().getJdbcUrl());
+      assertEquals("ufoo", pool.getHikariDataSource().getUsername());
+      assertEquals("pbar", pool.getHikariDataSource().getPassword());
+      assertTrue(pool.getHikariDataSource().isReadOnly());
+      assertEquals(54321, pool.getHikariDataSource().getMaxLifetime());
 
       System.setProperty("ebean.hikari.prefix.9", "");// disable spring
       System.setProperty("ebean.hikari.prefix", "quarkus.datasource.%db%");
       System.setProperty("ebean.hikari.default-Db", "");
       var dataSourcePool = (HikariEbeanDataSourcePool) new HikariEbeanConnectionPoolFactory().createPool("myQuarkusDS", new DataSourceConfig());
-      assertEquals("jdbc:h2:mem:evenQuarkus", dataSourcePool.ds.getJdbcUrl());
-      assertEquals("org.h2.Driver", dataSourcePool.ds.getDriverClassName());
-      assertEquals("test", dataSourcePool.ds.getUsername());
-      assertEquals("1234", dataSourcePool.ds.getPassword());
-      assertEquals(93, dataSourcePool.ds.getMaximumPoolSize());
+      assertEquals("jdbc:h2:mem:evenQuarkus", dataSourcePool.getHikariDataSource().getJdbcUrl());
+      assertEquals("org.h2.Driver", dataSourcePool.getHikariDataSource().getDriverClassName());
+      assertEquals("test", dataSourcePool.getHikariDataSource().getUsername());
+      assertEquals("1234", dataSourcePool.getHikariDataSource().getPassword());
+      assertEquals(93, dataSourcePool.getHikariDataSource().getMaximumPoolSize());
 
     } finally {
       Properties p = System.getProperties();
@@ -151,17 +151,17 @@ class HikariEbeanDataSourcePoolTest {
   @Test
 	void _checkDefaultDbProperties () {
     var ds = (HikariEbeanDataSourcePool) DB.getDefault().dataSource();
-    assertEquals("jdbc:h2:mem:my_app", ds.ds.getJdbcUrl());// from ebean-test platform
-    assertEquals("org.h2.Driver", ds.ds.getDriverClassName());
-    assertNull(ds.ds.getDataSourceClassName());
-    assertEquals("sa", ds.ds.getUsername());
-    assertNull(ds.ds.getPassword());
-    assertEquals("ebean", ds.ds.getPoolName());
-    assertEquals(1_800_000, ds.ds.getMaxLifetime());// default 30 mi
-    assertEquals(31, ds.ds.getMaximumPoolSize());
-    assertEquals(2, ds.ds.getMinimumIdle());
-    assertEquals(61_000, ds.ds.getIdleTimeout());
-    assertNull(ds.ds.getConnectionInitSql());
+    assertEquals("jdbc:h2:mem:my_app", ds.getHikariDataSource().getJdbcUrl());// from ebean-test platform
+    assertEquals("org.h2.Driver", ds.getHikariDataSource().getDriverClassName());
+    assertNull(ds.getHikariDataSource().getDataSourceClassName());
+    assertEquals("sa", ds.getHikariDataSource().getUsername());
+    assertNull(ds.getHikariDataSource().getPassword());
+    assertEquals("ebean", ds.getHikariDataSource().getPoolName());
+    assertEquals(1_800_000, ds.getHikariDataSource().getMaxLifetime());// default 30 mi
+    assertEquals(31, ds.getHikariDataSource().getMaximumPoolSize());
+    assertEquals(2, ds.getHikariDataSource().getMinimumIdle());
+    assertEquals(61_000, ds.getHikariDataSource().getIdleTimeout());
+    assertNull(ds.getHikariDataSource().getConnectionInitSql());
   }
 
 	@Test
@@ -199,20 +199,20 @@ class HikariEbeanDataSourcePoolTest {
 		assertEquals("CcBbAa", db.name());
 		var ds = (HikariEbeanDataSourcePool) db.dataSource();
 		assertEquals("ebean.CcBbAa", ds.name());
-		assertEquals("jdbc:h2:mem:FooBazYum", ds.ds.getJdbcUrl());
-		assertEquals("myLogin", ds.ds.getUsername());
-		assertEquals("mySecret", ds.ds.getPassword());
-		assertEquals(10, ds.ds.getMaximumPoolSize());
-		assertEquals(30_000, ds.ds.getConnectionTimeout());
-		assertEquals("{DB_CLOSE_ON_EXIT=true, NETWORK_TIMEOUT=42}", ds.ds.getDataSourceProperties().toString());
-		assertNull(ds.ds.getDataSource());
-		assertNull(ds.ds.getDataSourceClassName());
-		assertNull(ds.ds.getDriverClassName());
+		assertEquals("jdbc:h2:mem:FooBazYum", ds.getHikariDataSource().getJdbcUrl());
+		assertEquals("myLogin", ds.getHikariDataSource().getUsername());
+		assertEquals("mySecret", ds.getHikariDataSource().getPassword());
+		assertEquals(10, ds.getHikariDataSource().getMaximumPoolSize());
+		assertEquals(30_000, ds.getHikariDataSource().getConnectionTimeout());
+		assertEquals("{DB_CLOSE_ON_EXIT=true, NETWORK_TIMEOUT=42}", ds.getHikariDataSource().getDataSourceProperties().toString());
+		assertNull(ds.getHikariDataSource().getDataSource());
+		assertNull(ds.getHikariDataSource().getDataSourceClassName());
+		assertNull(ds.getHikariDataSource().getDriverClassName());
 		var sqlRow = db.sqlQuery("select 123").findOne();
 		assertEquals("{123=123}", sqlRow.toString());
-		assertNull(ds.ds.getDataSource());
-		assertNull(ds.ds.getDataSourceClassName());
-		assertNull(ds.ds.getDriverClassName());
+		assertNull(ds.getHikariDataSource().getDataSource());
+		assertNull(ds.getHikariDataSource().getDataSourceClassName());
+		assertNull(ds.getHikariDataSource().getDriverClassName());
 
 		// "default" We can't replace the already created, but we can check how it could be
 		System.getProperties().forEach((key, value)->{
@@ -232,15 +232,15 @@ class HikariEbeanDataSourcePoolTest {
 
 		assertEquals("HikariEbeanDataSourcePool(HikariDataSource (ebean))", ds.toString());
 		assertEquals("ebean", ds.name());
-		assertEquals("jdbc:h2:mem:FooBazYum", ds.ds.getJdbcUrl());
-		assertEquals("myLogin", ds.ds.getUsername());
-		assertEquals("mySecret", ds.ds.getPassword());
-		assertEquals(31, ds.ds.getMaximumPoolSize());
-		assertEquals(30_000, ds.ds.getConnectionTimeout());
-		assertEquals("{DB_CLOSE_ON_EXIT=true, NETWORK_TIMEOUT=42}", ds.ds.getDataSourceProperties().toString());
-		assertNull(ds.ds.getDataSource());
-		assertNull(ds.ds.getDataSourceClassName());
-		assertNull(ds.ds.getDriverClassName());
+		assertEquals("jdbc:h2:mem:FooBazYum", ds.getHikariDataSource().getJdbcUrl());
+		assertEquals("myLogin", ds.getHikariDataSource().getUsername());
+		assertEquals("mySecret", ds.getHikariDataSource().getPassword());
+		assertEquals(31, ds.getHikariDataSource().getMaximumPoolSize());
+		assertEquals(30_000, ds.getHikariDataSource().getConnectionTimeout());
+		assertEquals("{DB_CLOSE_ON_EXIT=true, NETWORK_TIMEOUT=42}", ds.getHikariDataSource().getDataSourceProperties().toString());
+		assertNull(ds.getHikariDataSource().getDataSource());
+		assertNull(ds.getHikariDataSource().getDataSourceClassName());
+		assertNull(ds.getHikariDataSource().getDriverClassName());
 
 		// remove settings
 		System.getProperties().keySet().removeIf(k->{

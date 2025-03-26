@@ -1,5 +1,6 @@
 package com.github.magicprinc.hibean;
 
+import com.github.magicprinc.hibean.util.HikariEbeanDataSourceWrapper;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.util.IsolationLevel;
@@ -58,7 +59,6 @@ import static java.util.Objects.requireNonNullElseGet;
 
  @author a.fink
  */
-@SuppressWarnings("UseOfPropertiesAsHashtable")
 @Slf4j
 class HikariEbeanDataSourcePool extends HikariEbeanDataSourceWrapper {
 	public HikariEbeanDataSourcePool (String callerPoolName, DataSourceConfig config) {

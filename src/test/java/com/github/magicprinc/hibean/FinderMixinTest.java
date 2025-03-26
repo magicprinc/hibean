@@ -1,6 +1,7 @@
 package com.github.magicprinc.hibean;
 
 import com.github.magicprinc.hibean.example.Smmo;
+import com.github.magicprinc.hibean.util.FBeanRepository;
 import io.ebean.DB;
 import io.ebean.Model;
 import lombok.val;
