@@ -2,6 +2,7 @@ package com.github.magicprinc.hibean.example;
 
 
 import com.github.magicprinc.hibean.SmartConfigTest;
+import com.github.magicprinc.hibean.util.CachedFinder;
 import io.ebean.DB;
 import io.ebean.datasource.DataSourceConfig;
 import io.ebean.util.CamelCaseHelper;
@@ -45,6 +46,10 @@ public class CustomerTest {
 		assertNotNull(f1);
 		assertEquals(customer.id(), f1.id());
 		assertEquals(customer.name(), f1.name());
+		assertEquals(customer, f1);
+
+		assertEquals(customer, CachedFinder.finder(Customer.class).query().where().idEq(customer.id()).findOne());
+		assertEquals(customer, CachedFinder.finder(customer).query().where().idEq(customer.id()).findOne());
 
 		Customer f2 = Customer.finder.query().where().idEq(customer.id()).findOne();
 		assertNotNull(f2);

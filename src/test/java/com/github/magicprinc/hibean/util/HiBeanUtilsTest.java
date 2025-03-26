@@ -37,10 +37,15 @@ class HiBeanUtilsTest {
 			.dstAddr("1917393791")
 			.save();
 
-		var mo2 = HiBeanUtils.finder(mo).query().where().eq("SrcAddr", "from").and().eq("dstAddr", "1917393791").findOne();
+		Smmo mo2 = HiBeanUtils.finder(mo).query().where().eq("SrcAddr", "from").and().eq("dstAddr", "1917393791").findOne();
 		assertNotSame(mo, mo2);
 		assertEquals(mo, mo2);
 
 		assertSame(db, mo.db());
+		//assertSame(db, mo2.db()); finder (пока?) не протягивает свою DB в Model
+
+		Smmo mo3 = CachedFinder.finder(mo).query().where().eq("SrcAddr", "from").and().eq("dstAddr", "1917393791").findOne();
+		assertNotSame(mo, mo3);
+		assertEquals(mo, mo3);
 	}
 }
