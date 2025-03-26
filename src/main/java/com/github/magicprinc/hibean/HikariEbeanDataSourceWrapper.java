@@ -55,13 +55,11 @@ import java.util.logging.Logger;
  @author a.fink
  */
 @Slf4j
-@NoArgsConstructor(access = AccessLevel.PACKAGE)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class HikariEbeanDataSourceWrapper implements DataSourcePool {
   HikariDataSource ds;
 
-	public HikariEbeanDataSourceWrapper (HikariDataSource ds) {
-		this.ds = ds;
-	}//new
+	public HikariEbeanDataSourceWrapper (HikariDataSource dataSource){ this.ds = dataSource; }//new
 
 	/**
 	 If wrapper is used with Spring DataSource, then one can have 2-in-1:
@@ -72,11 +70,11 @@ public class HikariEbeanDataSourceWrapper implements DataSourcePool {
 	 @see com.github.magicprinc.hibean.HikariEbeanConnectionPoolFactory#autoCommitOverrideEbeanConfig
 	*/
 	@Getter @Setter @Accessors(fluent = true, chain = true)
-	@Nullable Boolean connectionAutoCommitOverride = null;
+	@Nullable Boolean connectionAutoCommitOverride = HikariEbeanConnectionPoolFactory.getAutoCommitOverrideEbeanConfig();
 
 	public static DataSource wrap (DataSource dataSource) {
 		if (dataSource instanceof HikariEbeanDataSourceWrapper)
-				return dataSource;
+				return dataSource;// as-is
 
 		if (dataSource instanceof HikariDataSource hikariDataSource){
 			val wrapper = new HikariEbeanDataSourceWrapper(hikariDataSource);
