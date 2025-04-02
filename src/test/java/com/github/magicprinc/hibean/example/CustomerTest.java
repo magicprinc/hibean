@@ -1,18 +1,16 @@
 package com.github.magicprinc.hibean.example;
 
-
 import com.github.magicprinc.hibean.SmartConfigTest;
 import com.github.magicprinc.hibean.util.CachedFinder;
 import io.ebean.DB;
 import io.ebean.datasource.DataSourceConfig;
 import io.ebean.util.CamelCaseHelper;
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  https://github.com/ebean-orm-examples/example-springboot

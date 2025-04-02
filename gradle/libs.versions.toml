@@ -307,7 +307,7 @@ byteBuddyAgent = { module = "net.bytebuddy:byte-buddy-agent", version="latest.re
 coreAnnotation = ["jsr305","errorprone","smallryeCommonAnnotation","jakarta-annotationApi","jakarta-validationApi"]
 
 junit = [ # "hikariCP" boot обнаруживает его и требует jdbc url в конфиге
-	"junitJupiter","junitVintageEngine", "mockitoCore","mockitoJunitJupiter", "googleTruth", "approvalTests", "junitPioneer",
+	"junitJupiter", "mockitoCore","mockitoJunitJupiter", "googleTruth", "approvalTests", # "junitPioneer",  "junitVintageEngine",
   "springTest","eclipseCollectionsTest","logback","logbackCore","jsonAssert","okHttp-mockWebServer","okio","okHttpClient",
 	"testInstancio","springBootStarterTest","groovyCore","groovyTemplates", # "testInstancioQuickCheck"
 	"testEasyRandom", "testEasyRandomValidation",
