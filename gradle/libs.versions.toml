@@ -19,7 +19,7 @@ springBoot = "2.+"
 jackson = "2.18.+!!"
 mssql = "12.10.0.jre11"
 eclipseCollections = "11.+"
-ebeanVersion = "15.+"
+ebeanVersion = "15.10.+"
 slf4jVersion = "1.7.+!!"
 clickVersion = "2.6"
 
@@ -214,6 +214,13 @@ ebean-core = { module = "io.ebean:ebean", version.ref="ebeanVersion" }
 ebean-platform-sqlserver = { module = "io.ebean:ebean-platform-sqlserver", version.ref="ebeanVersion" }
 ebean-avaje-config = { module = "io.avaje:avaje-config", version="latest.release" }
 ebean-querybean = { module = "io.ebean:ebean-querybean", version.ref="ebeanVersion" }
+
+ebean-platform-h2 = { module = "io.ebean:ebean-platform-h2", version.ref="ebeanVersion" }
+ebean-platform-mysql = { module = "io.ebean:ebean-platform-mysql", version.ref="ebeanVersion" }
+ebean-platform-postgres = { module = "io.ebean:ebean-platform-postgres", version.ref="ebeanVersion" }
+ebean-platform-sqlite = { module = "io.ebean:ebean-platform-sqlite", version.ref="ebeanVersion" }
+
+ebean-querybean-generator = { module = "io.ebean:querybean-generator", version.ref="ebeanVersion" }
 ebean-test = { module = "io.ebean:ebean-test", version.ref="ebeanVersion" }
 
 
