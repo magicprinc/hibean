@@ -4,10 +4,12 @@ import com.github.magicprinc.hibean.SmartConfigTest;
 import com.github.magicprinc.hibean.example.Smmo;
 import com.zaxxer.hikari.HikariDataSource;
 import io.ebean.DB;
+import io.ebean.config.DatabaseConfig;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,8 +26,14 @@ class HiBeanUtilsTest {
 		//springDataSource.setUsername("and password");
 		springDataSource.setJdbcUrl("jdbc:h2:mem:fooBarZooDb");
 
+		var calls = new AtomicInteger();
+
 		HiBeanUtils.setDdl(true);
-		var db = HiBeanUtils.database("fooBarZoo", springDataSource, null);
+		var db = HiBeanUtils.database("fooBarZoo", springDataSource, null, cfg->{
+			assertInstanceOf(DatabaseConfig.class, cfg);
+			calls.incrementAndGet();
+		});
+		assertEquals(1, calls.get());
 
 		assertEquals(new HikariEbeanDataSourceWrapper(springDataSource), db.dataSource());
 		assertSame(springDataSource, db.dataSource().unwrap(HikariDataSource.class));

@@ -16,6 +16,7 @@ import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
 import javax.sql.DataSource;
+import java.util.function.Consumer;
 
 /**
 
@@ -93,7 +94,8 @@ public final class HiBeanUtils {
 	public static Database database (
 		String ebeanDatabaseName,
 		@NonNull DataSource dataSource,
-		@Nullable CurrentUserProvider currentUserProvider
+		@Nullable CurrentUserProvider currentUserProvider,
+		@Nullable Consumer<DatabaseConfig> configurer
 	){
 		var config = new DatabaseConfig();// config.loadFromProperties();
 		config.dataSource(HikariEbeanDataSourceWrapper.wrap(dataSource));
@@ -120,6 +122,8 @@ public final class HiBeanUtils {
 		//config.persistBatchSize(100);// default batch size
 		config.namingConvention(new MatchingNamingConvention());// vs UnderscoreNamingConvention
 
+		if (configurer != null)
+				configurer.accept(config);
 		try {
 			return DatabaseFactory.create(config);
 		} catch (PersistenceException | IllegalArgumentException e){
