@@ -19,7 +19,7 @@ springBoot = "2.+"
 jackson = "2.18.+!!"
 mssql = "12.10.0.jre11"
 eclipseCollections = "11.+"
-ebeanVersion = "15.10.+"
+ebeanVersion = "15.+"
 slf4jVersion = "1.7.+!!"
 clickVersion = "2.6"
 

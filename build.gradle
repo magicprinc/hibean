@@ -36,6 +36,7 @@ dependencies {
   errorprone("com.google.errorprone:error_prone_core:2.36.0")
 	compileOnly(libs.errorprone, libs.jspecify)
 
+	implementation(libs.ebean.avaje.config)
   api(libs.ebean.core)
   api(libs.hikariCP)
 	implementation(libs.bundles.jackson)

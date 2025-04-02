@@ -55,6 +55,12 @@ public class FinderMixinTest {
 			.excludeField(FieldPredicates.named("_\\$.*"));
 		val r = new EasyRandom(parameters);// Instancio
 
+		assertInstanceOf(HikariEbeanDataSourcePool.class, DB.getDefault().dataSource());
+		assertEquals("db", DB.getDefault().name());
+		assertEquals("jdbc:h2:mem:my_app", ((HikariEbeanDataSourcePool) DB.getDefault().dataSource()).getHikariDataSource().getJdbcUrl());
+		assertEquals("sa", ((HikariEbeanDataSourcePool) DB.getDefault().dataSource()).getHikariDataSource().getUsername());
+		assertNull(((HikariEbeanDataSourcePool) DB.getDefault().dataSource()).getHikariDataSource().getPassword());
+
 		for (int i=0; i<100; i++){
 			var smmo = r.nextObject(Smmo.class);
 			assertEquals("db", smmo.db().name());
