@@ -17,11 +17,11 @@ groovy = "3.0.+" # иначе в момент обновления в maven cent
 spring = "5.+!!" # Spring 5.3.32 vs boot 2.7.18 → 5.3.31
 springBoot = "2.+"
 jackson = "2.18.+!!"
-mssql = "12.8.1.jre11!!"
+mssql = "12.10.0.jre11"
 eclipseCollections = "11.+"
-ebeanVersion = "latest.release"
+ebeanVersion = "15.+"
 slf4jVersion = "1.7.+!!"
-clickVersion = "2.5.9"
+clickVersion = "2.6"
 
 ########################################################################################################################
 # implementation libs.groovy.json
@@ -68,7 +68,7 @@ groovyXml = { module = "org.codehaus.groovy:groovy-xml", version.ref="groovy" }
 mvel2 = { module = "org.mvel:mvel2", version="latest.release" }
 freemarker = { module = "org.freemarker:freemarker", version="2.3.+" }
 netSfAprCore = { module = "com.devinotele:net-sf-apr-core", version="2.1" }
-netSfAprSmpp = { module = "com.devinotele:net-sf-apr-smpp", version="2.4" }
+netSfAprSmpp = { module = "com.devinotele:net-sf-apr-smpp", version="2.5" }
 
 # https://docs.jitpack.io/   com.github.magicprinc.Apache-Click ~> org.apache.click
 apacheClickCore = { module = "com.github.magicprinc.Apache-Click:click", version.ref="clickVersion" }
@@ -78,10 +78,10 @@ apacheClickFreemarker = { module = "com.github.magicprinc.Apache-Click:click-fre
 
 guava = { module = "com.google.guava:guava", version="33.4.0-jre" }
 commonsLang3 = { module = "org.apache.commons:commons-lang3", version="3.+" }
-apacheCommonsIo = { module = "commons-io:commons-io", version="2.+!!" }
-apacheCommonsCodec = { module = "commons-codec:commons-codec", version="1.+!!" }
-apacheCommonsFileUpload = { module = "commons-fileupload:commons-fileupload", version="1.+!!" }
-apacheCommonsText = { module = "org.apache.commons:commons-text", version="1.+!!" }
+apacheCommonsIo = { module = "commons-io:commons-io", version="2.+" }
+apacheCommonsCodec = { module = "commons-codec:commons-codec", version="1.+" }
+apacheCommonsFileUpload = { module = "commons-fileupload:commons-fileupload", version="1.+" }
+apacheCommonsText = { module = "org.apache.commons:commons-text", version="1.+" }
 apacheCommonsMath = { module = "org.apache.commons:commons-math3", version="latest.release" }
 apacheCommonsValidator = { module = "commons-validator:commons-validator", version="latest.release" }
 # https://github.com/wrandelshofer/FastDoubleParser ➕ https://cowtowncoder.medium.com/jackson-2-18-even-faster-floating-point-reads-another-20-2c162faf2dac
@@ -138,6 +138,7 @@ springSecurityCore = { module = "org.springframework.security:spring-security-co
 springSecurityWeb = { module = "org.springframework.security:spring-security-web", version.ref="spring" }
 springSecurityConfig = { module = "org.springframework.security:spring-security-config", version.ref="spring" }
 springSecurityCrypto = { module = "org.springframework.security:spring-security-crypto", version.ref="spring" }
+# ? https://github.com/rocketbase-io/commons-auth ➕ https://vertx.io/docs/vertx-auth-common/java/
 
 hikariCP = { module = "com.zaxxer:HikariCP", version="latest.release" }
 
@@ -148,7 +149,10 @@ eclipseCollectionsApi = { module = "org.eclipse.collections:eclipse-collections-
 eclipseCollections = { module = "org.eclipse.collections:eclipse-collections", version.ref="eclipseCollections" }
 eclipseCollectionsFJ = { module = "org.eclipse.collections:eclipse-collections-forkjoin", version.ref="eclipseCollections" }
 eclipseCollectionsTest = { module = "org.eclipse.collections:eclipse-collections-testutils", version.ref="eclipseCollections" }
+# https://github.com/JCTools/JCTools ➕ https://www.baeldung.com/java-concurrency-jc-tools
 jctools = { module = "org.jctools:jctools-core", version="4.+" }
+# https://tech.trivago.com/post/2022-03-09-why-and-how-we-use-primitive-maps ➕ https://github.com/magicprinc/fastutil-concurrent-wrapper
+fastutilConcurrentWrapper = { module = "com.github.magicprinc:fastutil-concurrent-wrapper", version="latest.release" }
 
 okHttpClient = { module = "com.squareup.okhttp3:okhttp", version="4.+" }
 okhttpLoggingInterceptor = { module = "com.squareup.okhttp3:logging-interceptor", version="4.+" }
@@ -170,10 +174,15 @@ fastCsv = { module = "de.siegmar:fastcsv", version="latest.release" }
 # https://github.com/vert-x3/vertx-mail-client
 # https://github.com/egulias/EmailValidator4J
 
+# https://github.com/rocketbase-io/email-template-builder
+
+# https://github.com/srikanth-lingala/zip4j SEE also org.jboss.shrinkwrap:shrinkwrap-impl-base:1.+
+zip4j = { module = "net.lingala.zip4j:zip4j", version="latest.release" }
+
 ########################################################################################################################
 
-logback = { module = "ch.qos.logback:logback-classic", version="1.2.+!!" } # == Slf4j 1.7.+ & Spring Boot 2
-logbackCore = { module = "ch.qos.logback:logback-core", version="1.2.+!!" } # == Slf4j 1.7.+ & Spring Boot 2
+logback = { module = "ch.qos.logback:logback-classic", version="1.2.+" } # == Slf4j 1.7.+ & Spring Boot 2
+logbackCore = { module = "ch.qos.logback:logback-core", version="1.2.+" } # == Slf4j 1.7.+ & Spring Boot 2
 
 #logbackGelfPaluch = { module = "biz.paluch.logging:logstash-gelf", version="latest.release" } # https://github.com/mp911de/logstash-gelf ➕ http://logging.paluch.biz/ ➕ https://github.com/mp911de/logstash-gelf-subsystem
 logbackGelfSiegmar = { module = "com.github.magicprinc:logback-gelf", version="9.0" } # https://github.com/osiegmar/logback-gelf !!! 4.11 наша сборка logback 1.2 & fixes vs de.siegmar:logback-gelf
@@ -196,6 +205,16 @@ springBootAutoconfigureProcessor = { module = "org.springframework.boot:spring-b
 
 # IDEA научилась сама?: compileOnly("org.springframework.boot:spring-boot-configuration-processor:2.+") + annotationProcessor "org.springframework.boot:spring-boot-configuration-processor:2.+"
 # + testImplementation("org.springframework.boot:spring-boot-configuration-processor:2.+") + testAnnotationProcessor("org.springframework.boot:spring-boot-configuration-processor:2.+")
+
+
+# implementation('io.ebean:ebean-spring-txn:latest.release')// config = new DatabaseConfig(); config.setExternalTransactionManager(new SpringJdbcTransactionManager());
+ebean-spring-txn = { module = "io.ebean:ebean-spring-txn", version.ref="ebeanVersion" }
+ebean-hibean = { module = 'com.github.magicprinc:hibean', version="2.1" }
+ebean-core = { module = "io.ebean:ebean", version.ref="ebeanVersion" }
+ebean-platform-sqlserver = { module = "io.ebean:ebean-platform-sqlserver", version.ref="ebeanVersion" }
+ebean-avaje-config = { module = "io.avaje:avaje-config", version="latest.release" }
+ebean-querybean = { module = "io.ebean:ebean-querybean", version.ref="ebeanVersion" }
+ebean-test = { module = "io.ebean:ebean-test", version.ref="ebeanVersion" }
 
 
 swaggerAnnotations = { module = "io.swagger.core.v3:swagger-annotations-jakarta", version="2.2.+" } # https://springdoc.org/migrating-from-springfox.html
@@ -221,6 +240,7 @@ faultToleranceVertx = { module = "io.smallrye:smallrye-fault-tolerance-vertx", v
 spring-pluginCore = { module = "org.springframework.plugin:spring-plugin-core", version="2.0.0.RELEASE" }
 # https://avaje.io/spi/ + https://github.com/avaje/avaje-spi-service
 avajeSPIService = { module = "io.avaje:avaje-spi-service", version = "latest.release" }
+# https://pf4j.org/ ➕ https://github.com/pf4j/pf4j
 
 # https://github.com/gliwka/hyperscan-java
 regexHyperscan = { module = "com.gliwka.hyperscan:hyperscan", version="5.4.0-2.0.0" }
@@ -298,21 +318,30 @@ springMini = ["springCore","springContext","springJdbc"]
 springSecurity = ["springSecurityCore","springSecurityWeb","springSecurityConfig"]
 
 groovyMini = ["groovyCore","groovyTemplates"]
-groovy = ["groovyCore", "groovyServlet", "groovyTemplates", "groovyJson", "groovyXml"]
+groovy = ["groovyCore","groovyTemplates", "groovyServlet", "groovyJson", "groovyXml"]
 
 smallryeConfig = ["smallryeConfig","smallryeConfigSourceYaml","snakeYaml","smallryeConfigValidator","jakarta-validationApi","jakarta-annotationApi","jbossLogging"]
 
 okHttp = ["okHttpClient","okhttpLoggingInterceptor","okio"]
 
+slf4j = ["slf4jApi", "slf4jJCL", "slf4jJUL", "slf4jLog4j"]
+
 upgradeBootApp = [ # "hikariCP" boot обнаруживает его и требует jdbc url в конфиге
 	"jsr305","errorprone","smallryeCommonAnnotation","jakarta-annotationApi",
-	"jacksonCore","jacksonDatabind","jacksonAnnotations", "jacksonDatatypeJsr310","jacksonDatatypeJdk8","jacksonModuleParameterNames",
+	"jacksonCore","jacksonDatabind","jacksonAnnotations", "jacksonDatatypeJsr310","jacksonDatatypeJdk8","jacksonModuleParameterNames", "fastDoubleParser",
+	"woodstoxXml", "snakeYaml",
 	"jakarta-validationApi", "swaggerAnnotations",
-	"guava", "commonsLang3", "caffeine", "slf4jApi", "slf4jJCL", "slf4jJUL", "slf4jLog4j",
+	"guava", "commonsLang3", "caffeine", # "slf4jApi", "slf4jJCL", "slf4jJUL", "slf4jLog4j",
 	"micrometerCore", "micrometerRegistryPrometheus",
 	"springCore","springContext","springJdbc", "springWeb","springBeans","springContextSupport","springTx","springWebMvc","springAOP","springExpression",
-	"jbossLogging"
+	"jbossLogging", "logbackCore","logback"
 	]
+
+coreUtilExt = [
+	"icu4j", "fastutil",
+	"apacheCommonsIo", "apacheCommonsCodec",
+	"faultTolerance","faultToleranceVertx"
+]
 
 ########################################################################################################################
 # alias(libs.plugins.versions)

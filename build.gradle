@@ -14,7 +14,7 @@ println "[INFO] ${project.group}:${project.name}:$version  ⇒  ${tasks.jar.arch
 repositories {
   mavenLocal()
   mavenCentral()
-  maven { url "https://jitpack.io" }
+  maven { url = "https://jitpack.io" }
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -36,14 +36,14 @@ dependencies {
   errorprone("com.google.errorprone:error_prone_core:2.36.0")
 	compileOnly(libs.errorprone, libs.jspecify)
 
-  api("io.ebean:ebean:latest.release")
+  api("io.ebean:ebean:15.+")
   api(libs.hikariCP)
 	implementation(libs.bundles.jackson)
-	implementation(libs.jakarta.activationApi)
+	implementation(libs.jakarta.annotationApi)
 	implementation(libs.jakarta.validationApi)
-	implementation(libs.slf4jApi, libs.slf4jJCL)
+	compileOnly(libs.slf4jApi)
 
-	implementation("org.eclipse.microprofile.config:microprofile-config-api:latest.release")
+	api("org.eclipse.microprofile.config:microprofile-config-api:latest.release")
 	compileOnly(libs.smallryeConfig)
 
   compileOnly libs.micrometerCore
@@ -51,22 +51,22 @@ dependencies {
 	// compileOnly("io.ebean:ebean-agent:latest.release") // fix old ebean-agent bug → upgrade IDEA plugin,
 
 	//*** TEST TEST TEST ***
+	testImplementation(libs.bundles.junit, libs.bundles.slf4j)
 
-	testAnnotationProcessor("io.ebean:querybean-generator:latest.release") // vs: annotationProcessor
+	testAnnotationProcessor("io.ebean:querybean-generator:15.+") // vs: annotationProcessor
 	testImplementation(libs.bundles.coreAnnotation, libs.jspecify)
 
-  testImplementation libs.bundles.junit
-	testImplementation("io.ebean:ebean-test:latest.release")
+	testImplementation(libs.ebean.test)
 
-  testImplementation("io.ebean:ebean-querybean:latest.release")
+  testImplementation(libs.ebean.querybean)
 
-	testCompileOnly('io.ebean:ebean-spring-txn:latest.release')// to show SpringJdbcTransactionManager
+	testCompileOnly(libs.ebean.spring.txn)// to show SpringJdbcTransactionManager
 
-	testImplementation("io.ebean:ebean-platform-h2:latest.release")
-	testImplementation("io.ebean:ebean-platform-mysql:latest.release")
-	testImplementation("io.ebean:ebean-platform-postgres:latest.release")
-	testImplementation("io.ebean:ebean-platform-sqlite:latest.release")
-	testImplementation("io.ebean:ebean-platform-sqlserver:latest.release")
+	testImplementation("io.ebean:ebean-platform-h2:15.+")
+	//testImplementation("io.ebean:ebean-platform-mysql:latest.release")
+	testImplementation("io.ebean:ebean-platform-postgres:15.+")
+	//testImplementation("io.ebean:ebean-platform-sqlite:latest.release")
+	testImplementation(libs.ebean.platform.sqlserver)
 
 	testRuntimeOnly(libs.jdbc.h2, libs.jdbc.mssql)
 
