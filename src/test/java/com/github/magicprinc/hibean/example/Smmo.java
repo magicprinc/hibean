@@ -14,13 +14,13 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
+import org.jspecify.annotations.NullMarked;
 
-import javax.annotation.ParametersAreNullableByDefault;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "smmo")
-@ParametersAreNullableByDefault
+@NullMarked
 // DON'T! @Data, @EqualsAndHashCode  See https://ebean.io/docs/best-practice/
 @Getter  @Setter
 @ToString(doNotUseGetters = true) // avoid getters! callSuper = false

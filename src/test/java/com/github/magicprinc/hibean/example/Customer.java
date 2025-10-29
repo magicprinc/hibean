@@ -11,8 +11,8 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
+import org.jspecify.annotations.NullMarked;
 
-import javax.annotation.ParametersAreNullableByDefault;
 import java.time.LocalDate;
 
 @Entity
@@ -21,7 +21,7 @@ import java.time.LocalDate;
 @ToString(doNotUseGetters = true, callSuper = true) // avoid getters!
 @NoArgsConstructor  @AllArgsConstructor
 @Accessors(fluent = true, chain = true) // instead of @Builder(toBuilder = true)
-@ParametersAreNullableByDefault
+@NullMarked
 public class Customer extends BaseDomain {
   @NotNull String name;
   LocalDate startDate;

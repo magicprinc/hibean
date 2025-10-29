@@ -6,22 +6,24 @@
 # Sharing dependency versions between projects
 # https://docs.gradle.org/current/userguide/platforms.html
 
-#todo javax → jakarta    (IDEA, shell scripts)
+# AI + IDEA + OpenRewrite!  https://habr.com/ru/companies/sberbank/articles/825368/
 
 # version.ref="mssql"
 # toolversion=libs.versions.checkstyle.get()
 [versions]
-jdk = "17"
+jdk = "21"
 
-groovy = "3.0.+" # иначе в момент обновления в maven central глюки из-за разных версий разных модулей groovy 2025 fix!! → +: стал редко обновляться
-spring = "5.+!!" # Spring 5.3.32 vs boot 2.7.18 → 5.3.31
-springBoot = "2.+"
-jackson = "2.18.+!!"
-mssql = "12.10.0.jre11"
-eclipseCollections = "11.+"
-ebeanVersion = "15.+"
-slf4jVersion = "1.7.+!!"
-clickVersion = "2.6"
+groovy = "5.0.2"
+spring = "6.+"
+springBoot = "3.+"
+jackson = "2.+"
+mssql = "13.2.1.jre11"
+eclipseCollections = "13.+"
+ebeanVersion = "17.+!!"
+slf4jVersion = "2.0.+!!"
+micrometerVersion = "1.15.+!!" # делают RC и иногда ломают: требует контроля человеком
+vaadinHillaVersion = "24.9.2"
+finkSmsRouter = "2.21.2"
 
 ########################################################################################################################
 # implementation libs.groovy.json
@@ -31,8 +33,10 @@ clickVersion = "2.6"
 # https://jspecify.dev/docs/user-guide/ ➕ https://docs.spring.io/spring-framework/reference/7.0/core/null-safety.html
 jspecify = { module = "org.jspecify:jspecify", version="latest.release" }
 
+jetbrains-annotations = { module = "org.jetbrains:annotations", version="latest.release" }
+
 # https://javadoc.io/doc/com.google.code.findbugs/jsr305/latest/index.html  ⚠ jsr305 (dead) → jsr308 BUT: jsr305 is more practical  E.g. @ParametersAreNonnullByDefault
-jsr305 = { module = "com.google.code.findbugs:jsr305", version="latest.release" }
+# jsr305 = { module = "com.google.code.findbugs:jsr305", version="latest.release" }
 
 # https://javadoc.io/doc/com.google.errorprone/error_prone_annotations/latest/index.html  E.g: @CanIgnoreReturnValue
 errorprone = { module = "com.google.errorprone:error_prone_annotations", version="latest.release" }
@@ -41,11 +45,11 @@ errorprone = { module = "com.google.errorprone:error_prone_annotations", version
 smallryeCommonAnnotation = { module = "io.smallrye.common:smallrye-common-annotation", version="latest.release" }
 
 # E.g. javax.annotation.@PostConstruct
-javax-annotationApi   = { module = "javax.annotation:javax.annotation-api", version="1.+" }
+#javax-annotationApi   = { module = "javax.annotation:javax.annotation-api", version="1.+" }
 jakarta-annotationApi = { module = "jakarta.annotation:jakarta.annotation-api", version="latest.release" }
 
 # https://www.baeldung.com/javax-validation
-javax-validationApi   = { module = "javax.validation:validation-api", version="2.+" }
+#javax-validationApi   = { module = "javax.validation:validation-api", version="2.+" }
 jakarta-validationApi = { module = "jakarta.validation:jakarta.validation-api", version="latest.release" }
 
 #
@@ -57,31 +61,50 @@ jdbc_mssql = { module = "com.microsoft.sqlserver:mssql-jdbc", version.ref="mssql
 jdbc_postgresql = { module = "org.postgresql:postgresql", version="latest.release" }
 jdbc_mySql = { module = "com.mysql:mysql-connector-j", version="latest.release" }
 jdbc_h2 = { module = "com.h2database:h2", version="latest.release" } # ~2.2.224  Ignite ~ 1.4.197!!
+jdbc_sqlite = { module = "org.xerial:sqlite-jdbc", version="latest.release" }
+# https://duckdb.org/docs/stable/clients/java.html
+jdbc_duckdb = { module = "org.duckdb:duckdb_jdbc", version="latest.release" }
+rocksdb = { module = "org.rocksdb:rocksdbjni", version="10.2.+" } # 10.4.2 без dll 😱
 
-
-groovyCore = { module = "org.codehaus.groovy:groovy", version.ref="groovy" }
-groovyTemplates = { module = "org.codehaus.groovy:groovy-templates", version.ref="groovy" }
-groovyServlet = { module = "org.codehaus.groovy:groovy-servlet", version.ref="groovy" }
-groovyJson = { module = "org.codehaus.groovy:groovy-json", version.ref="groovy" }
-groovyXml = { module = "org.codehaus.groovy:groovy-xml", version.ref="groovy" }
+groovyCore = { module = "org.apache.groovy:groovy", version.ref="groovy" }
+#groovyTemplates = { module = "org.apache.groovy:groovy-templates", version.ref="groovy" }
+groovyServlet = { module = "org.apache.groovy:groovy-servlet", version.ref="groovy" }
+groovyJson = { module = "org.apache.groovy:groovy-json", version.ref="groovy" }
+groovyXml = { module = "org.apache.groovy:groovy-xml", version.ref="groovy" }
 
 mvel2 = { module = "org.mvel:mvel2", version="latest.release" }
-freemarker = { module = "org.freemarker:freemarker", version="2.3.+" }
-netSfAprCore = { module = "com.devinotele:net-sf-apr-core", version="2.1" }
-netSfAprSmpp = { module = "com.devinotele:net-sf-apr-smpp", version="2.5" }
+freemarker = { module = "org.freemarker:freemarker", version="2.+" }
 
-# https://docs.jitpack.io/   com.github.magicprinc.Apache-Click ~> org.apache.click
-apacheClickCore = { module = "com.github.magicprinc.Apache-Click:click", version.ref="clickVersion" }
-apacheClickExtras = { module = "com.github.magicprinc.Apache-Click:click-extras", version.ref="clickVersion" }
-apacheClickFreemarker = { module = "com.github.magicprinc.Apache-Click:click-freemarker", version.ref="clickVersion" }
+# https://github.com/anosim114/qute-spring-boot-starter ➕ https://quarkus.io/guides/qute-reference ➕ https://quarkus.io/guides/qute
+qute-spring-boot-starter = { module = "com.github.magicprinc:qute-spring-boot-starter", version="latest.release" } # com.github.anosim114:qute-spring-boot-starter
 
+guava = { module = "com.google.guava:guava", version="33.5.0-jre" }
+# https://github.com/dynatrace-oss/hash4j ➕ https://www.dynatrace.com/news/blog/hash4j-new-library-java/
+hash4j = { module = "com.dynatrace.hash4j:hash4j", version="latest.release" }
 
-guava = { module = "com.google.guava:guava", version="33.4.0-jre" }
-commonsLang3 = { module = "org.apache.commons:commons-lang3", version="3.+" }
-apacheCommonsIo = { module = "commons-io:commons-io", version="2.+" }
-apacheCommonsCodec = { module = "commons-codec:commons-codec", version="1.+" }
-apacheCommonsFileUpload = { module = "commons-fileupload:commons-fileupload", version="1.+" }
-apacheCommonsText = { module = "org.apache.commons:commons-text", version="1.+" }
+# https://www.bouncycastle.org/documentation/documentation-java/#documentation
+# Provider, Utility Classes, CMS/EAC/OCSP/PKIX/PKCS/TSP, S/MIME, OpenPGP/BCPG, TLS, Core (lcrypto); Jasypt - Java Simplified Encryption
+# Provider bcprov-lts8on https://downloads.bouncycastle.org/lts-java/docs/bcprov-lts8on-2.73.5-javadoc/
+# CMS/EAC/OCSP/PKIX/PKCS/TSP bcpkix-lts8on https://downloads.bouncycastle.org/lts-java/docs/bcpkix-lts8on-2.73.5-javadoc/
+# TLS bctls-lts8on https://downloads.bouncycastle.org/lts-java/docs/bctls-lts8on-2.73.5-javadoc/
+
+bouncycastle-bcprov = { module = "org.bouncycastle:bcprov-lts8on", version="latest.release" }
+bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-lts8on", version="latest.release" }
+bouncycastle-bctls  = { module = "org.bouncycastle:bctls-lts8on",  version="latest.release" }
+
+# https://sslcontext-kickstart.com ➕ https://github.com/Hakky54/ayza?tab=readme-ov-file#netty ➕ https://github.com/Hakky54/java-tutorials/tree/main/instant-server-ssl-reloading-with-netty/netty-server
+sslcontextKickstart = { module = "io.github.hakky54:ayza", version="latest.release" }
+sslcontextKickstartPEM = { module = "io.github.hakky54:ayza-for-pem", version="latest.release" }
+sslcontextKickstartNetty = { module = "io.github.hakky54:ayza-for-netty", version="latest.release" }
+
+# https://github.com/RoaringBitmap/RoaringBitmap ➕ http://roaringbitmap.org/
+roaringBitmap = { module = "com.github.RoaringBitmap:RoaringBitmap", version="latest.release" }
+commonsLang3 = { module = "org.apache.commons:commons-lang3", version="latest.release" }
+commonsCollections4 = { module = "org.apache.commons:commons-collections4", version="latest.release" } # prefer Guava, Spring, JCTools, FastUtil, eclipse-collections
+apacheCommonsIo = { module = "commons-io:commons-io", version="latest.release" }
+apacheCommonsCodec = { module = "commons-codec:commons-codec", version="latest.release" }
+apacheCommonsFileUpload = { module = "commons-fileupload:commons-fileupload", version="latest.release" }
+apacheCommonsText = { module = "org.apache.commons:commons-text", version="latest.release" }
 apacheCommonsMath = { module = "org.apache.commons:commons-math3", version="latest.release" }
 apacheCommonsValidator = { module = "commons-validator:commons-validator", version="latest.release" }
 # https://github.com/wrandelshofer/FastDoubleParser ➕ https://cowtowncoder.medium.com/jackson-2-18-even-faster-floating-point-reads-another-20-2c162faf2dac
@@ -96,10 +119,17 @@ slf4jLog4j = { module = "org.slf4j:log4j-over-slf4j", version.ref="slf4jVersion"
 
 slf4jSimple = { module = "org.slf4j:slf4j-simple", version.ref="slf4jVersion" }
 
-micrometerCore = { module = "io.micrometer:micrometer-core", version="1.12.+!!" }
-micrometerRegistryPrometheus = { module = "io.micrometer:micrometer-registry-prometheus", version="1.12.+!!" }
+micrometerCore = { module = "io.micrometer:micrometer-core", version.ref="micrometerVersion" }
+micrometerRegistryPrometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref="micrometerVersion" }
 
 
+upgradeKafkaClients = { module = "org.apache.kafka:kafka-clients", version="3.6.+" }
+upgradeSnappy = { module = "org.xerial.snappy:snappy-java", version="1.+" }
+# https://github.com/luben/zstd-jni ➕ https://habr.com/ru/companies/1c/articles/680838/
+upgradeZStd = { module = "com.github.luben:zstd-jni", version="latest.release" }
+upgradeBrotli4j = { module = "com.aayushatharva.brotli4j:brotli4j", version="latest.release" } # https://github.com/hyperxpro/Brotli4j
+natsCore = { module = "io.nats:jnats", version="latest.release" } # https://github.com/nats-io/nats.java
+natsSpring = { module = "io.nats:nats-spring", version="latest.release" } # https://github.com/nats-io/spring-nats
 
 # модули Jackson разных версий не совместимы ⇒ форсируем единую самую свежую версию
 jacksonCore = { module = "com.fasterxml.jackson.core:jackson-core", version.ref="jackson" }
@@ -109,18 +139,26 @@ jacksonDatatypeJsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datat
 jacksonDatatypeJdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8", version.ref="jackson" }
 jacksonModuleParameterNames = { module = "com.fasterxml.jackson.module:jackson-module-parameter-names", version.ref="jackson" }
 jacksonModuleBlackbird = { module = "com.fasterxml.jackson.module:jackson-module-blackbird", version.ref="jackson" } #todo ~10% faster
+jacksonClassmate = { module = "com.fasterxml:classmate", version="1.7.+" } # keep in sync with ^!
 
 jacksonDataformatXml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-xml", version.ref="jackson" }
-jacksonModuleJaxb = { module = "com.fasterxml.jackson.module:jackson-module-jaxb-annotations", version.ref="jackson" }
+#jacksonModuleJaxb = { module = "com.fasterxml.jackson.module:jackson-module-jaxb-annotations", version.ref="jackson" } # javax jaxb-api (OLD)
+jacksonModuleJakartaJaxb = { module = 'com.fasterxml.jackson.module:jackson-module-jakarta-xmlbind-annotations', version.ref="jackson" }
 woodstoxXml = { module = "com.fasterxml.woodstox:woodstox-core", version="latest.release" }
+jakarta-jaxbXmlBindApi = { module = "jakarta.xml.bind:jakarta.xml.bind-api", version="latest.release" } # JAXB → Jackson! × MOXy? javax.jaxb 2.2 for JDK 8
 xom = { module = "xom:xom", version="1.3.+" }
 
 jacksonDataformatYaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml", version.ref="jackson" }
-snakeYaml = { module = "org.yaml:snakeyaml", version="2.+!!" } # Spring Boot тянет старый 1.30
-jacksonDataformatIon = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-ion", version.ref="jackson" }
-jacksonDataformatToml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-toml", version.ref="jackson" }
-jacksonDataformatSmile = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-smile", version.ref="jackson" }
-jacksonDataformatCbor = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor", version.ref="jackson" }
+snakeYaml = { module = "org.yaml:snakeyaml", version="latest.release" } # Spring Boot тянет старый 1.30
+jacksonDataformatCbor = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor", version.ref="jackson" } # https://www.rfc-editor.org/rfc/rfc8949
+# https://github.com/msgpack/msgpack-java/blob/main/msgpack-jackson/README.md
+jacksonDataformatMsgPack = { module = "org.msgpack:jackson-dataformat-msgpack", version="latest.release" } # https://www.rfc-editor.org/rfc/rfc8949
+# jacksonDataformatIon = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-ion", version.ref="jackson" }
+# amazonIonJava = { module = "com.amazon.ion:ion-java", version="latest.release" }<^ - NICE, but slow and not widely spread
+# jacksonDataformatToml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-toml", version.ref="jackson" } - nice, but text for humans: see yaml and hocon
+jacksonDataformatSmile = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-smile", version.ref="jackson" } #× fast, but ONLY JAVA 😭
+# https://github.com/michel-kraemer/bson4jackson → new ObjectMapper(new BsonFactory())  MongoDB https://en.wikipedia.org/wiki/BSON
+# jacksonDataformatBSON = { module = "de.undercouch:bson4jackson", version.ref="jackson" } × nice, but mostly for mongodb
 
 
 springCore = { module = "org.springframework:spring-core", version.ref="spring" }
@@ -134,10 +172,12 @@ springWeb = { module = "org.springframework:spring-web", version.ref="spring" }
 springWebMvc = { module = "org.springframework:spring-webmvc", version.ref="spring" }
 springTx = { module = "org.springframework:spring-tx", version.ref="spring" }
 
+springBootStarterSecurity = { module = "org.springframework.boot:spring-boot-starter-security", version.ref="springBoot" }
 springSecurityCore = { module = "org.springframework.security:spring-security-core", version.ref="spring" }
 springSecurityWeb = { module = "org.springframework.security:spring-security-web", version.ref="spring" }
 springSecurityConfig = { module = "org.springframework.security:spring-security-config", version.ref="spring" }
 springSecurityCrypto = { module = "org.springframework.security:spring-security-crypto", version.ref="spring" }
+springSecurityOAuth2Jose = { module = "org.springframework.security:spring-security-oauth2-jose", version.ref="spring" }
 # ? https://github.com/rocketbase-io/commons-auth ➕ https://vertx.io/docs/vertx-auth-common/java/
 
 hikariCP = { module = "com.zaxxer:HikariCP", version="latest.release" }
@@ -152,22 +192,28 @@ eclipseCollectionsTest = { module = "org.eclipse.collections:eclipse-collections
 # https://github.com/JCTools/JCTools ➕ https://www.baeldung.com/java-concurrency-jc-tools
 jctools = { module = "org.jctools:jctools-core", version="4.+" }
 # https://tech.trivago.com/post/2022-03-09-why-and-how-we-use-primitive-maps ➕ https://github.com/magicprinc/fastutil-concurrent-wrapper
-fastutilConcurrentWrapper = { module = "com.github.magicprinc:fastutil-concurrent-wrapper", version="latest.release" }
+fastutilConcurrentWrapper = { module = "com.github.magicprinc:fastutil-concurrent-wrapper", version="0.5.3" }
 
 okHttpClient = { module = "com.squareup.okhttp3:okhttp", version="4.+" }
 okhttpLoggingInterceptor = { module = "com.squareup.okhttp3:logging-interceptor", version="4.+" }
+okhttpInterceptorBrotli = { module = "com.squareup.okhttp3:okhttp-brotli", version="4.+" }
 okio = { module = "com.squareup.okio:okio", version="3.+" }
 
 jsoup = { module = "org.jsoup:jsoup", version="1.+" } # jsoup HTML parser library @ https://jsoup.org/
 
 #apacheHttpClient5 = { module = "org.apache.httpcomponents.client5:httpclient5", version="5.3.+" }
-netty3 = { module = "io.netty:netty", version="3.10.6.Final" }
 
-icu4j = { module = "com.ibm.icu:icu4j", version="latest.release" } # Full unicode support. There IS a) an older version b) in *internal* packages in JDK
+# https://jira.platform-s.com/browse/PLAT-3123 + https://netty.io/wiki/new-and-noteworthy-in-4.0.html + https://github.com/netty/netty/wiki/Netty-4.2-Migration-Guide + EXAMPLES
+# https://www.mastertheboss.com/jboss-frameworks/netty/jboss-netty-tutorial/ + https://speakerdeck.com/sullis/netty-chicago-java-user-group-2024-04-17 + https://netty.io/wiki/user-guide-for-4.x.html
+netty4 = { module = "io.netty:netty-all", version="4.2.7.Final" }
 
-# очень быстрый и всеядный CsvReader/CsvWriter https://github.com/osiegmar/FastCSV
+icu4j = { module = "com.ibm.icu:icu4j", version="latest.release" } # Full Unicode support. There IS a) an older version b) in *internal* packages in JDK
+
+# очень быстрый и всеядный CsvReader/CsvWriter  https://github.com/osiegmar/FastCSV + https://fastcsv.org/
 # H2 тоже содержит мощные org.h2.tools.Csv,org.h2.tools.SimpleResultSet
-fastCsv = { module = "de.siegmar:fastcsv", version="latest.release" }
+fastCSV = { module = "de.siegmar:fastcsv", version="latest.release" }
+# https://github.com/FasterXML/jackson-dataformats-text/tree/2.19/csv
+jacksonDataformatCSV = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-csv", version.ref="jackson" }
 
 # E-MAIL
 # https://github.com/oblac/jodd-mail
@@ -178,14 +224,15 @@ fastCsv = { module = "de.siegmar:fastcsv", version="latest.release" }
 
 # https://github.com/srikanth-lingala/zip4j SEE also org.jboss.shrinkwrap:shrinkwrap-impl-base:1.+
 zip4j = { module = "net.lingala.zip4j:zip4j", version="latest.release" }
+apache-commonsCompress = { module = "org.apache.commons:commons-compress", version="latest.release" } # bzip2, gzip, pack200, LZMA, XZ, Snappy, traditional Unix Compress, DEFLATE, DEFLATE64, LZ4, Brotli, Zstandard and ar, cpio, jar, tar, zip, dump, 7z, arj
 
 ########################################################################################################################
 
-logback = { module = "ch.qos.logback:logback-classic", version="1.2.+" } # == Slf4j 1.7.+ & Spring Boot 2
-logbackCore = { module = "ch.qos.logback:logback-core", version="1.2.+" } # == Slf4j 1.7.+ & Spring Boot 2
+logback = { module = "ch.qos.logback:logback-classic", version="latest.release" } # == Slf4j 1.7.+ & Spring Boot 2
+logbackCore = { module = "ch.qos.logback:logback-core", version="latest.release" } # == Slf4j 1.7.+ & Spring Boot 2
 
 #logbackGelfPaluch = { module = "biz.paluch.logging:logstash-gelf", version="latest.release" } # https://github.com/mp911de/logstash-gelf ➕ http://logging.paluch.biz/ ➕ https://github.com/mp911de/logstash-gelf-subsystem
-logbackGelfSiegmar = { module = "com.github.magicprinc:logback-gelf", version="9.0" } # https://github.com/osiegmar/logback-gelf !!! 4.11 наша сборка logback 1.2 & fixes vs de.siegmar:logback-gelf
+logbackGelfSiegmar = { module = "de.siegmar:logback-gelf", version="latest.release" } # https://github.com/osiegmar/logback-gelf × com.github.magicprinc:logback-gelf
 
 ########################################################################################################################
 
@@ -209,22 +256,28 @@ springBootAutoconfigureProcessor = { module = "org.springframework.boot:spring-b
 
 # implementation('io.ebean:ebean-spring-txn:latest.release')// config = new DatabaseConfig(); config.setExternalTransactionManager(new SpringJdbcTransactionManager());
 ebean-spring-txn = { module = "io.ebean:ebean-spring-txn", version.ref="ebeanVersion" }
-ebean-hibean = { module = 'com.github.magicprinc:hibean', version="2.1" }
+ebean-hibean = { module = 'com.github.magicprinc:hibean', version="2.2" }
 ebean-core = { module = "io.ebean:ebean", version.ref="ebeanVersion" }
-ebean-platform-sqlserver = { module = "io.ebean:ebean-platform-sqlserver", version.ref="ebeanVersion" }
 ebean-avaje-config = { module = "io.avaje:avaje-config", version="latest.release" }
 ebean-querybean = { module = "io.ebean:ebean-querybean", version.ref="ebeanVersion" }
 
+ebean-ddl-generator = { module = "io.ebean:ebean-ddl-generator", version.ref="ebeanVersion" }
+
+ebean-platform-sqlserver = { module = "io.ebean:ebean-platform-sqlserver", version.ref="ebeanVersion" }
 ebean-platform-h2 = { module = "io.ebean:ebean-platform-h2", version.ref="ebeanVersion" }
 ebean-platform-mysql = { module = "io.ebean:ebean-platform-mysql", version.ref="ebeanVersion" }
 ebean-platform-postgres = { module = "io.ebean:ebean-platform-postgres", version.ref="ebeanVersion" }
 ebean-platform-sqlite = { module = "io.ebean:ebean-platform-sqlite", version.ref="ebeanVersion" }
 
-ebean-querybean-generator = { module = "io.ebean:querybean-generator", version.ref="ebeanVersion" }
+annotationProcessor-ebean-queryBeanGenerator = { module = "io.ebean:querybean-generator", version.ref="ebeanVersion" }
 ebean-test = { module = "io.ebean:ebean-test", version.ref="ebeanVersion" }
 
+mapStruct = { module = "org.mapstruct:mapstruct", version="latest.release" }
+annotationProcessor-mapStruct = { module = "org.mapstruct:mapstruct-processor", version="latest.release" }
+annotationProcessor-lombok = { module = "org.projectlombok:lombok", version="latest.release" }
+annotationProcessor-mapStructLombokBinding = { module = "org.projectlombok:lombok-mapstruct-binding", version="latest.release" }
 
-swaggerAnnotations = { module = "io.swagger.core.v3:swagger-annotations-jakarta", version="2.2.+" } # https://springdoc.org/migrating-from-springfox.html
+swaggerAnnotations = { module = "io.swagger.core.v3:swagger-annotations-jakarta", version="latest.release" } # https://springdoc.org/migrating-from-springfox.html
 
 ########################################################################################################################
 
@@ -232,6 +285,9 @@ swaggerAnnotations = { module = "io.swagger.core.v3:swagger-annotations-jakarta"
 smallryeConfig = { module = "io.smallrye.config:smallrye-config-core", version="latest.release" }
 smallryeConfigSourceYaml = { module = "io.smallrye.config:smallrye-config-source-yaml", version="latest.release" }
 #smallryeConfigSourceHocon = { module = "io.smallrye.config:smallrye-config-source-hocon", version="latest.release" }
+typesafeConfigHocon = { module = "com.typesafe:config", version="latest.release" }
+# https://smallrye.io/smallrye-config/Main/config/secret-keys/
+smallryeConfigCrypto = { module = "io.smallrye.config:smallrye-config-crypto", version="latest.release" }
 smallryeConfigValidator = { module = "io.smallrye.config:smallrye-config-validator", version="latest.release" }
 jbossLogging = { module = "org.jboss.logging:jboss-logging", version="latest.release!!" }
 
@@ -244,7 +300,7 @@ faultToleranceVertx = { module = "io.smallrye:smallrye-fault-tolerance-vertx", v
 # https://smallrye.io/smallrye-mutiny ➕ https://smallrye.io/smallrye-mutiny-vertx-bindings/ ➕ https://github.com/smallrye/smallrye-mutiny-vertx-bindings/tree/main/vertx-mutiny-clients ➕ io.smallrye.reactive:smallrye-mutiny-vertx-runtime:latest.release
 
 # https://github.com/spring-projects/spring-plugin -vs- JDK ServiceLoader
-spring-pluginCore = { module = "org.springframework.plugin:spring-plugin-core", version="2.0.0.RELEASE" }
+spring-pluginCore = { module = "org.springframework.plugin:spring-plugin-core", version="latest.release" }
 # https://avaje.io/spi/ + https://github.com/avaje/avaje-spi-service
 avajeSPIService = { module = "io.avaje:avaje-spi-service", version = "latest.release" }
 # https://pf4j.org/ ➕ https://github.com/pf4j/pf4j
@@ -254,23 +310,25 @@ regexHyperscan = { module = "com.gliwka.hyperscan:hyperscan", version="5.4.0-2.0
 # https://dev.to/daniilroman/re2j-instead-of-default-regex-in-java-when-and-how-to-use-it-5bgn ➕ https://github.com/google/re2j
 googleRE2j = { module = "com.google.re2j:re2j", version="latest.release" }
 
+vaadinHillaStarter = {module = "com.vaadin:vaadin-spring-boot-starter", version.ref = "vaadinHillaVersion"}
+
 ########################################################################################################################
 # compileOnly API
 
-javaxServletApi = { module = "javax.servlet:javax.servlet-api", version="4.+" }
+javax-ServletApi = { module = "com.github.devinotelecom:javax-jakarta-servlet-adapter", version="2.6" }
 jakartaServletApi = { module = "jakarta.servlet:jakarta.servlet-api", version="6.1.+" }
 
 ########################################################################################################################
 # *** TEST TEST TEST ***
-junitJupiter = { module = "org.junit.jupiter:junit-jupiter", version="5.11.+!!" }
-junitVintageEngine = { module = "org.junit.vintage:junit-vintage-engine", version="5.11.+!!" }
+junitJupiter = { module = "org.junit.jupiter:junit-jupiter", version="5.13.+" }
+junitVintageEngine = { module = "org.junit.vintage:junit-vintage-engine", version="5.13.+" }
 mockitoCore = { module = "org.mockito:mockito-core", version="latest.release" }
 mockitoJunitJupiter = { module = "org.mockito:mockito-junit-jupiter", version="latest.release" }
 # https://github.com/junit-pioneer/junit-pioneer ➕ https://junit-pioneer.org/ ➕ https://github.com/junit-team/junit5/discussions/2697
 junitPioneer = { module = "org.junit-pioneer:junit-pioneer", version="latest.release" }
 googleTruth = { module = "com.google.truth:truth", version="latest.release" }
 # https://github.com/approvals/ApprovalTests.Java ➕ https://approvaltests.com/ ➕ https://github.com/junit-team/junit5/discussions/2697
-approvalTests = { module = "com.approvaltests:approvaltests", version="latest.release" }
+approvalTests = { module = "com.approvaltests:approvaltests", version="24.+" } #todo watch approvaltests
 springTest = { module = "org.springframework:spring-test", version.ref="spring" }
 springBootStarterTest = { module = "org.springframework.boot:spring-boot-starter-test", version.ref="springBoot" }
 
@@ -278,20 +336,29 @@ springBootStarterTest = { module = "org.springframework.boot:spring-boot-starter
 # v→ ? https://github.com/lukas-krecan/JsonUnit
 # todo https://github.com/cescoffier/loom-unit
 jsonAssert = { module = "org.skyscreamer:jsonassert", version="latest.release" } # org.skyscreamer.jsonassert.JSONAssert.assertEquals
+
+# https://github.com/lukas-krecan/JsonUnit ➕ https://mvnrepository.com/artifact/net.javacrumbs.json-unit/json-unit
+jsonUnit = { module = "net.javacrumbs.json-unit:json-unit", version="latest.release" }
+
+# (groovy json?, Jayway / vert.x JsonPath? qute) https://github.com/bazaarvoice/jolt ➕ https://docs.google.com/presentation/d/1sAiuiFC4Lzz4-064sg1p8EQt2ev0o442MfEbvrpD1ls
+bazaarvoiceJolt = { module = "com.bazaarvoice.jolt:jolt-core", version="latest.release" }
+
 okHttp-mockWebServer = { module = "com.squareup.okhttp3:mockwebserver", version="4.+" }
 
 # https://github.com/instancio/instancio	➕	https://github.com/instancio/instancio-quickstart
 # https://www.instancio.org/getting-started/	➕	https://www.instancio.org/	➕	https://www.baeldung.com/java-test-data-instancio
-testInstancio = { module = "org.instancio:instancio-junit", version="4.4.+" }
-testInstancioQuickCheck = { module = "org.instancio:instancio-quickcheck", version="4.4.+" }
+testInstancio = { module = "org.instancio:instancio-junit", version="latest.release" }
+testInstancioQuickCheck = { module = "org.instancio:instancio-quickcheck", version="latest.release" }
 
-testEasyRandom = { module = "io.github.dvgaba:easy-random-core", version="7.+" }
-testEasyRandomValidation = { module = "io.github.dvgaba:easy-random-bean-validation", version="7.+" }
+testEasyRandom = { module = "io.github.dvgaba:easy-random-core", version="latest.release" }
+testEasyRandomValidation = { module = "io.github.dvgaba:easy-random-bean-validation", version="latest.release" }
 
 
 # если нет локального (sql) сервера, можно использовать TestContainers (требуется запущенный Docker)
-testcontainers-mssqlserver = { module = "org.testcontainers:mssqlserver", version="1.+" }
-testcontainers-postgresql  = { module = "org.testcontainers:postgresql", version="1.+" }
+testcontainers-mssqlserver = { module = "org.testcontainers:mssqlserver", version="latest.release" }
+testcontainers-postgresql  = { module = "org.testcontainers:postgresql",  version="latest.release" }
+# https://java.testcontainers.org/test_framework_integration/junit_5/
+testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version='latest.release' }
 
 # Spring, Mockito? тянут старый ByteBuddy несовместимый с JDK21. Свежая версия совместима:
 byteBuddy = { module = "net.bytebuddy:byte-buddy", version="latest.release" }
@@ -304,19 +371,25 @@ byteBuddyAgent = { module = "net.bytebuddy:byte-buddy-agent", version="latest.re
 # implementation libs.bundles.groovy
 [bundles]
 
-coreAnnotation = ["jsr305","errorprone","smallryeCommonAnnotation","jakarta-annotationApi","jakarta-validationApi"]
+coreAnnotation = ["errorprone","jakarta-annotationApi","jakarta-validationApi","jspecify","jetbrains-annotations"]
 
 junit = [ # "hikariCP" boot обнаруживает его и требует jdbc url в конфиге
-	"junitJupiter", "mockitoCore","mockitoJunitJupiter", "googleTruth", "approvalTests", # "junitPioneer",  "junitVintageEngine",
-  "springTest","eclipseCollectionsTest","logback","logbackCore","jsonAssert","okHttp-mockWebServer","okio","okHttpClient",
-	"testInstancio","springBootStarterTest","groovyCore","groovyTemplates", # "testInstancioQuickCheck"
-	"testEasyRandom", "testEasyRandomValidation",
-	"byteBuddy", "byteBuddyAgent"
+	"junitJupiter","mockitoCore","mockitoJunitJupiter", "googleTruth", "approvalTests", "junitPioneer",
+  "springTest","springBootStarterTest",
+	"eclipseCollectionsTest","jsonAssert",
+	"okHttp-mockWebServer","okio","okHttpClient",
+	"testEasyRandom", "testEasyRandomValidation", "testInstancio", # "testInstancioQuickCheck"
+	"slf4jApi", "slf4jJCL", "slf4jJUL", "slf4jLog4j",
+	"testcontainers-junit"
+  ]
+junitRuntime = [
+	"junitVintageEngine", "logback","logbackCore", "byteBuddy","byteBuddyAgent"
+  ]
+jackson = ["jacksonCore","jacksonDatabind","jacksonAnnotations", "jacksonDatatypeJsr310","jacksonDatatypeJdk8","jacksonModuleParameterNames", "fastDoubleParser", "jacksonClassmate"]
+json = 		["jacksonCore","jacksonDatabind","jacksonAnnotations", "jacksonDatatypeJsr310","jacksonDatatypeJdk8","jacksonModuleParameterNames", "fastDoubleParser", "jacksonClassmate",
+		"jacksonDataformatXml", "jacksonModuleJakartaJaxb", "woodstoxXml", "jakarta-jaxbXmlBindApi", # "jacksonModuleJaxb"
+		"jacksonDataformatYaml", "snakeYaml"
 	]
-
-jackson = ["jacksonCore","jacksonDatabind","jacksonAnnotations", "jacksonDatatypeJsr310","jacksonDatatypeJdk8","jacksonModuleParameterNames", "fastDoubleParser"]
-json = 		["jacksonCore","jacksonDatabind","jacksonAnnotations", "jacksonDatatypeJsr310","jacksonDatatypeJdk8","jacksonModuleParameterNames", "fastDoubleParser",
-						"jacksonDataformatXml", "jacksonModuleJaxb", "woodstoxXml", "jacksonDataformatYaml", "snakeYaml" ]
 
 eclipseCollections = ["eclipseCollectionsApi", "eclipseCollections", "eclipseCollectionsFJ"]
 
@@ -324,28 +397,28 @@ springMini = ["springCore","springContext","springJdbc"]
 
 springSecurity = ["springSecurityCore","springSecurityWeb","springSecurityConfig"]
 
-groovyMini = ["groovyCore","groovyTemplates"]
-groovy = ["groovyCore","groovyTemplates", "groovyServlet", "groovyJson", "groovyXml"]
+groovy = ["groovyCore", "groovyJson", "groovyXml"] # "groovyServlet" → javax; groovyTemplates → qute
 
-smallryeConfig = ["smallryeConfig","smallryeConfigSourceYaml","snakeYaml","smallryeConfigValidator","jakarta-validationApi","jakarta-annotationApi","jbossLogging"]
+smallryeConfig = ["smallryeConfig","smallryeConfigSourceYaml","snakeYaml","smallryeConfigValidator","jakarta-validationApi","jakarta-annotationApi","jbossLogging",
+		"smallryeConfigCrypto", "typesafeConfigHocon"]
 
-okHttp = ["okHttpClient","okhttpLoggingInterceptor","okio"]
+okHttp = ["okHttpClient","okhttpLoggingInterceptor","okio","okhttpInterceptorBrotli"]
 
 slf4j = ["slf4jApi", "slf4jJCL", "slf4jJUL", "slf4jLog4j"]
 
 upgradeBootApp = [ # "hikariCP" boot обнаруживает его и требует jdbc url в конфиге
-	"jsr305","errorprone","smallryeCommonAnnotation","jakarta-annotationApi",
+	"errorprone","jakarta-annotationApi",
 	"jacksonCore","jacksonDatabind","jacksonAnnotations", "jacksonDatatypeJsr310","jacksonDatatypeJdk8","jacksonModuleParameterNames", "fastDoubleParser",
 	"woodstoxXml", "snakeYaml",
 	"jakarta-validationApi", "swaggerAnnotations",
 	"guava", "commonsLang3", "caffeine", # "slf4jApi", "slf4jJCL", "slf4jJUL", "slf4jLog4j",
 	"micrometerCore", "micrometerRegistryPrometheus",
 	"springCore","springContext","springJdbc", "springWeb","springBeans","springContextSupport","springTx","springWebMvc","springAOP","springExpression",
-	"jbossLogging", "logbackCore","logback"
+	"jbossLogging", "logbackCore","logback","logbackGelfSiegmar"
 	]
 
 coreUtilExt = [
-	"icu4j", "fastutil",
+	"icu4j", "fastutil", "hash4j", "fastutilConcurrentWrapper",
 	"apacheCommonsIo", "apacheCommonsCodec",
 	"faultTolerance","faultToleranceVertx"
 ]
@@ -354,11 +427,16 @@ coreUtilExt = [
 # alias(libs.plugins.versions)
 [plugins]
 lombok = { id = "io.freefair.lombok", version="latest.release" }
-sonarlint = { id ="name.remal.sonarlint", version="latest.release" } # https://github.com/remal-gradle-plugins/sonarlint + https://lift.sonatype.com/
-errorprone = { id = "net.ltgt.errorprone", version="latest.release" } # https://errorprone.info/
+
+# https://errorprone.info ➕ https://github.com/tbroyer/gradle-errorprone-plugin#configuration ➕ https://errorprone.info/docs/flags
+# https://github.com/PicnicSupermarket/error-prone-support ➕ https://error-prone.picnic.tech
+errorprone = { id = "net.ltgt.errorprone", version="latest.release" }
+# https://github.com/remal-gradle-plugins/sonarlint + https://lift.sonatype.com/ + https://github.com/SonarSource/sonar-java
+sonarlint = { id ="name.remal.sonarlint", version="latest.release" }
+
 versions = { id = "com.github.ben-manes.versions", version="latest.release" } # https://github.com/ben-manes/gradle-versions-plugin
 
-spring-dependencyManagement = { id = "io.spring.dependency-management", version="1.+" }
+spring-dependencyManagement = { id = "io.spring.dependency-management", version="latest.release" }
 # нам нужен Spring Boot для объявления всех зависимостей, но не нужны bootJar и тд и suffix -plain у lib.jar
 # https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/#managing-dependencies.dependency-management-plugin.using-in-isolation
 spring-boot = { id = "org.springframework.boot", version.ref="springBoot" } # Vaadin 23 doesn't work with Boot3
@@ -377,16 +455,21 @@ ebean = { id = "io.ebean", version="latest.release" }
 gitVersion = { id = "com.palantir.git-version", version="latest.release" }
 
 # https://github.com/n0mer/gradle-git-properties Produce build/resources/main/git.properties for spring-boot-actuator
-gradleGitProperties = { id = "com.gorylenko.gradle-git-properties", version="2.4.+" } # latest.release
+gradleGitProperties = { id = "com.gorylenko.gradle-git-properties", version="latest.release" }
 
 # https://github.com/Im-Fran/GradleDotEnv  →  https://plugins.gradle.org/plugin/cl.franciscosolis.gradledotenv
 dotEnv = { id = "cl.franciscosolis.gradledotenv", version="latest.release" }
 
 # https://gretty-gradle-plugin.github.io/gretty-doc/index.html  ➕  https://github.com/gretty-gradle-plugin/gretty/tree/gretty-3.x
-grettyWebContainer = { id = "org.gretty", version="3.+" } # 4.+ for jakarta packages
+grettyWebContainer = { id = "org.gretty", version="latest.release" }
 
 # https://github.com/spotbugs/spotbugs + https://github.com/spotbugs/spotbugs-gradle-plugin
 spotBugs = { id = "com.github.spotbugs", version="latest.release" }
 
 # gradle jibBuildTar + docker load --input build/jib-image.tar
-googleJIB = { id = 'com.google.cloud.tools.jib',  version='latest.release' }
+googleJIB = { id = 'com.google.cloud.tools.jib', version='latest.release' }
+
+vaadinHilla = { id = "com.vaadin", version.ref = "vaadinHillaVersion" }
+
+# https://github.com/gradlex-org/reproducible-builds
+reproducible-builds = { id = "org.gradlex.reproducible-builds", version='latest.release' }

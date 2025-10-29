@@ -23,17 +23,19 @@ tasks.withType(JavaCompile).configureEach {
   options.release.set(17) // javac --release 7..22+
   options.deprecation = true
 
-  options.errorprone {
-    enabled = true  // <<<!!! You can disable Error-Prone here!
-    disableWarningsInGeneratedCode = true
-    excludedPaths = ".*/build/gen.*/.*"
+	options.errorprone {
+		enabled = true
+		disableWarningsInGeneratedCode = true
+		excludedPaths = ".*/(generated|test).*/.*"
+		disable("UnusedVariable")
 		disable("MissingSummary")
-    errorproneArgs = ["-XepExcludedPaths:.*/test/.*"]
-  }
+		disable("StringConcatToTextBlock")
+		errorproneArgs = ["-XepExcludedPaths:.*/test/.*"]
+	}
 }
 
 dependencies {
-  errorprone("com.google.errorprone:error_prone_core:2.36.0")
+  errorprone("com.google.errorprone:error_prone_core:latest.release")
 	compileOnly(libs.errorprone, libs.jspecify)
 
 	implementation(libs.ebean.avaje.config)
@@ -53,8 +55,9 @@ dependencies {
 
 	//*** TEST TEST TEST ***
 	testImplementation(libs.bundles.junit, libs.bundles.slf4j)
+	testRuntimeOnly(libs.bundles.junitRuntime)
 
-	testAnnotationProcessor(libs.ebean.querybean.generator) // vs: annotationProcessor
+	testAnnotationProcessor(libs.annotationProcessor.ebean.queryBeanGenerator) // vs: annotationProcessor
 	testImplementation(libs.bundles.coreAnnotation, libs.jspecify)
 
 	testImplementation(libs.ebean.test)
@@ -112,11 +115,8 @@ test {
   enableAssertions = true
   maxHeapSize = "500m"
 
-  //systemProperty("slf4j.detectLoggerNameMismatch", "true")
   systemProperty("file.encoding", "UTF-8")
-
   systemProperty("user.language", "en")
-  Locale.setDefault(Locale.ENGLISH)
 }
 //sonarLint { isGeneratedCodeIgnored = true; ignoreFailures = true }
 lombok { version = "latest.release" }

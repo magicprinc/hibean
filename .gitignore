@@ -114,7 +114,7 @@ generated_tests/
 ignite/
 !**/src/**/ignite/
 
-### в .env часто хранят пароли и токены = приватно
+### .env contains private passwords and tokens
 .env
 
 ### Your Application specifics

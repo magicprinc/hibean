@@ -8,6 +8,7 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 import io.smallrye.config.common.MapBackedConfigSource;
 import io.smallrye.config.source.yaml.YamlConfigSourceLoader;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +18,6 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.junit.jupiter.api.Test;
 
-import javax.annotation.Nonnegative;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -72,7 +72,7 @@ public class SmartConfigTest {
 	static class JPropertiesConfigSourceProvider extends AbstractLocationConfigSourceLoader {
 		static final String[] EXTENSIONS_PROVIDER = {"properties", "conf"};
 		@Getter private static final JPropertiesConfigSourceProvider instance = new JPropertiesConfigSourceProvider();
-		public static List<ConfigSource> of (@Nonnegative int ordinal, @NonNull String location) {
+		public static List<ConfigSource> of (@PositiveOrZero int ordinal, @NonNull String location) {
 			try {
 				return getInstance().loadConfigSources(location, ordinal);
 			} catch (Throwable e){

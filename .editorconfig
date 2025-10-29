@@ -21,3 +21,6 @@ tab_width = 2
 [*.yml]
 indent_style = space
 tab_width = 2
+[*.env]
+indent_style = space
+tab_width = 2

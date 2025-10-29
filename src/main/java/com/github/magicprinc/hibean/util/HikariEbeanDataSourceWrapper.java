@@ -27,6 +27,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 /**
@@ -45,15 +46,15 @@ import java.util.logging.Logger;
   spring.datasource.hikari.data-source-properties.cachePrepStmts=true
  }</pre>
 
- @see HiBeanUtils#database(String, DataSource, CurrentUserProvider)
+ @see HiBeanUtils#database(String, DataSource, CurrentUserProvider, Consumer)
 
- @see io.ebean.datasource.pool.ConnectionPool#ConnectionPool(String, DataSourceConfig)
+ @see io.ebean.datasource.pool.ConnectionPool
  @see DataSourceConfig
  @see DataSourceConfig#loadSettings(io.ebean.datasource.ConfigPropertiesHelper)
  @see DatabaseConfig#loadFromProperties()
  @see io.ebean.datasource.DataSourceBuilder.Settings
 
- @author a.fink
+ @author Andrej Fink @ https://magicprinc.github.io
  */
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -136,6 +137,9 @@ public class HikariEbeanDataSourceWrapper implements DataSourcePool {
 			@Override public long maxAcquireMicros (){ return 0; }
 			/** todo {@link MicrometerMetricsTracker} */
 			@Override public long meanAcquireNanos (){ return 0; }
+
+			@Override public long totalAcquireMicros (){ return 0; }
+			@Override public long totalWaitMicros (){ return 0; }
 		};
   }
 
