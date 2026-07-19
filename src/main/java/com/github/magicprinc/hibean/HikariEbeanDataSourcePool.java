@@ -146,60 +146,15 @@ class HikariEbeanDataSourcePool extends HikariEbeanDataSourceWrapper {
           hc.addDataSourceProperty(key.substring(prefix.length()), value);
           return;// ~ break
         }
-      }//else: HikariConfig.setter
+      }//f else: HikariConfig.setter
+
       String javaPropertyName = toCamelFromUnderscore(key.replace('-', '_'));// spring.boot-key_fmt
-      boolean success = setProperty(hc, javaPropertyName, value, methods);
-      if (!success && !javaPropertyName.equals(key))// fallback to property_name as-is
-					setProperty(hc, key, value, methods);
-    });
-  }
-  /** TO DO keep in sync with {@link PropertyElf#setProperty} */
-  static boolean setProperty (Object target, String propName, Object propValue, List<Method> methods) {
-    // use the english locale to avoid the infamous turkish locale bug
-    val methodName = "set" + propName.substring(0, 1).toUpperCase(Locale.ENGLISH) + propName.substring(1);
-    var writeMethod = methods.stream().filter(m -> m.getName().equals(methodName) && m.getParameterCount() == 1).findFirst().orElse(null);
 
-    if (writeMethod == null){
-      val methodName2 = "set" + propName.toUpperCase(Locale.ENGLISH);
-      writeMethod = methods.stream().filter(m -> m.getName().equals(methodName2) && m.getParameterCount() == 1).findFirst().orElse(null);
-    }
-
-    if (writeMethod == null){
-      log.warn("Property {} does not exist on target {}", propName, target.getClass());// ~ ebean property
-      return false;
-    }
-
-    try {
-      Class<?> paramClass = writeMethod.getParameterTypes()[0];
-      if (paramClass == int.class || paramClass == Integer.class){
-        writeMethod.invoke(target, Integer.decode(propValue.toString().trim()));
-
-      } else if (paramClass == long.class || paramClass == Long.class){
-        writeMethod.invoke(target, Long.decode(propValue.toString().trim()));
-
-      } else if (paramClass == short.class || paramClass == Short.class){
-        writeMethod.invoke(target, Short.decode(propValue.toString().trim()));
-
-      } else if (paramClass == boolean.class || paramClass == Boolean.class){
-        writeMethod.invoke(target, Boolean.parseBoolean(propValue.toString().trim()));
-
-      } else if (paramClass == String.class || paramClass == CharSequence.class){
-        writeMethod.invoke(target, propValue.toString());
-
-      } else {
-        try {
-          log.debug("Try to create a new instance of \"{}\"", propValue);
-          writeMethod.invoke(target, Class.forName(propValue.toString()).getDeclaredConstructor().newInstance());
-        } catch (InstantiationException | ClassNotFoundException | NoClassDefFoundError e){
-          log.debug("Class \"{}\" not found or could not instantiate it (Default constructor) ‹ {}", propValue, e.toString());
-          writeMethod.invoke(target, propValue);
-        }
-      }
-      return true;// success
-    } catch (Throwable e){
-      log.error("Failed to set property {} on target {}", propName, target.getClass(), e);
-      return false;
-    }
+      boolean success = SmartConfig.setProperty(hc, javaPropertyName, value, methods);
+      if (!success && !javaPropertyName.equals(key)){// fallback to property_name as-is
+				SmartConfig.setProperty(hc, key, value, methods);
+			}
+    });//f
   }
 
   protected void mergeFromDataSourceConfig (HikariConfig hc, DataSourceConfig dsc) {
@@ -234,8 +189,9 @@ class HikariEbeanDataSourcePool extends HikariEbeanDataSourceWrapper {
       p.putAll(cp);
       hc.setDataSourceProperties(p);
     }
-    if (dsc.getInitSql() != null && !dsc.getInitSql().isEmpty())
-      	sets(String.join(";\r\n", dsc.getInitSql()), hc::setConnectionInitSql);
+    if (dsc.getInitSql() != null && !dsc.getInitSql().isEmpty()){
+			sets(String.join(";\r\n", dsc.getInitSql()), hc::setConnectionInitSql);
+		}
   }
   void sets (String dataSourceConfig, Consumer<String> setter){
     String s = trim(dataSourceConfig);
@@ -304,8 +260,9 @@ class HikariEbeanDataSourcePool extends HikariEbeanDataSourceWrapper {
 					break;// found
 				}
 			}
-			if (propertyName.isEmpty())
-					continue;// skip lines without prefix
+			if (propertyName.isEmpty()){
+				continue;// skip lines without prefix
+			}
 
 			k = k.replace("-", "").replace("_", ""); // [datasource.db.] max-Connections → maxconnections
 			String alias = trim(aliasMap.get(k));
