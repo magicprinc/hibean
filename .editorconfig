@@ -15,12 +15,19 @@ indent_size = 2
 ij_continuation_indent_size = 2
 ij_any_align_multiline_parameters = false
 
-[*.yaml]
-indent_style = space
-tab_width = 2
-[*.yml]
-indent_style = space
-tab_width = 2
+max_line_length = 160
+
+ij_formatter_on_tag = @formatter:on
+ij_formatter_off_tag = @formatter:off
+ij_formatter_tags_enabled = true
+ij_smart_tabs = false
+ij_visual_guides = 100,120,160
+ij_wrap_on_typing = false
+
 [*.env]
+indent_style = space
+tab_width = 2
+
+[{*.yaml,*.yml}]
 indent_style = space
 tab_width = 2

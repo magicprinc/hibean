@@ -84,7 +84,6 @@ tmp/
 
 *.sqlite*
 
-.codebuddy
 
 # The following files are generated/updated by vaadin-maven-plugin
 node_modules/
@@ -117,7 +116,10 @@ ignite/
 ### .env contains private passwords and tokens
 .env
 
+
+.kotlin/
+.factorypath
+/bin/
+
 ### Your Application specifics
-/db-create-all.sql
-/db-drop-all.sql
-/fooBarZoo-create-all.sql
+*.sql
