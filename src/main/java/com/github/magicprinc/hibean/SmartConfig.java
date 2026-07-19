@@ -176,10 +176,10 @@ interface SmartConfig {
 	///
 	/// Resolution logic:
 	/// 1. Converts the property name to set + CapitalizedName (e.g: maximumPoolSize → setMaximumPoolSize)
-	/// 2. If no method found, tries a SHOUTY_CASE fallback: setMAXIMUMPOOLSIZE (line 163–164) — for historical HikariCP compatibility
+	/// 2. If no method found, tries a SHOUTY_CASE fallback: setMAXIMUMPOOLSIZE — for historical HikariCP compatibility
 	/// 3. If still no match, logs a warning and returns false — the property is silently ignored (typically an Ebean property, not Hikari)
 	///
-	/// Type coercion (lines 175–204): inspects the setter's parameter type and converts the string value accordingly:
+	/// Type coercion: inspects the setter's parameter type and converts the string value accordingly:
 	/// - int/Integer → Integer.decode(value) (supports hex 0xFF, octal 077)
 	/// - long/Long → Long.decode(value)
 	/// - short/Short → Short.decode(value)
