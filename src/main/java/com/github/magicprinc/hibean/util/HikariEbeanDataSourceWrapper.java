@@ -128,6 +128,8 @@ public class HikariEbeanDataSourceWrapper implements DataSourcePool {
       @Override public int free (){ return pool.getIdleConnections(); }
       @Override public int busy (){ return pool.getActiveConnections(); }
       @Override public int waiting (){ return pool.getThreadsAwaitingConnection(); }
+			@Override public int size (){ return pool.getTotalConnections(); }
+
       /** todo {@link MicrometerMetricsTracker} */
       @Override public int highWaterMark () {
         return pool.getActiveConnections();
@@ -140,7 +142,7 @@ public class HikariEbeanDataSourceWrapper implements DataSourcePool {
 
 			@Override public long totalAcquireMicros (){ return 0; }
 			@Override public long totalWaitMicros (){ return 0; }
-		};
+    };
   }
 
   @Override public SQLException dataSourceDownReason (){ return null; }
